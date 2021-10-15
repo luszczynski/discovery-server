@@ -5,7 +5,7 @@
     internal_host_started_processing_role: "memory"
 
 - name: gather internal_mem_memtotal
-  raw: cat /proc/meminfo 2>/dev/null | grep '^MemTotal\s*' | sed -n -e 's/^.*MemTotal\s*.\s*//p'
+  raw: cat /proc/meminfo 2>/dev/null | grep '^MemTotal\s*' | sed -n -e 's/^.*MemTotal\s*.\s*//p' | tr -d '\r' | tr -d '\n'
   register: internal_mem_memtotal
   ignore_errors: yes
 
@@ -15,7 +15,7 @@
   ignore_errors: yes
 
 - name: gather internal_mem_memfree
-  raw: cat /proc/meminfo 2>/dev/null | grep '^MemFree\s*' | sed -n -e 's/^.*MemFree\s*.\s*//p'
+  raw: cat /proc/meminfo 2>/dev/null | grep '^MemFree\s*' | sed -n -e 's/^.*MemFree\s*.\s*//p' | tr -d '\r' | tr -d '\n'
   register: internal_mem_memfree
   ignore_errors: yes
 
@@ -25,7 +25,7 @@
   ignore_errors: yes
 
 - name: gather internal_mem_memavailable
-  raw: cat /proc/meminfo 2>/dev/null | grep '^MemAvailable\s*' | sed -n -e 's/^.*MemAvailable\s*.\s*//p'
+  raw: cat /proc/meminfo 2>/dev/null | grep '^MemAvailable\s*' | sed -n -e 's/^.*MemAvailable\s*.\s*//p' | tr -d '\r' | tr -d '\n'
   register: internal_mem_memavailable
   ignore_errors: yes
 
@@ -35,7 +35,7 @@
   ignore_errors: yes
 
 - name: gather internal_mem_swaptotal
-  raw: cat /proc/meminfo 2>/dev/null | grep '^SwapTotal\s*' | sed -n -e 's/^.*SwapTotal\s*.\s*//p'
+  raw: cat /proc/meminfo 2>/dev/null | grep '^SwapTotal\s*' | sed -n -e 's/^.*SwapTotal\s*.\s*//p' | tr -d '\r' | tr -d '\n'
   register: internal_mem_swaptotal
   ignore_errors: yes
 
@@ -45,7 +45,7 @@
   ignore_errors: yes
 
 - name: gather internal_mem_swapfree
-  raw: cat /proc/meminfo 2>/dev/null | grep '^SwapFree\s*' | sed -n -e 's/^.*SwapFree\s*.\s*//p'
+  raw: cat /proc/meminfo 2>/dev/null | grep '^SwapFree\s*' | sed -n -e 's/^.*SwapFree\s*.\s*//p' | tr -d '\r' | tr -d '\n'
   register: internal_mem_swapfree
   ignore_errors: yes
 
@@ -55,7 +55,7 @@
   ignore_errors: yes
 
 - name: gather internal_mem_hugepages_total
-  raw: cat /proc/meminfo 2>/dev/null | grep '^HugePages_Total\s*' | sed -n -e 's/^.*HugePages_Total\s*.\s*//p'
+  raw: cat /proc/meminfo 2>/dev/null | grep '^HugePages_Total\s*' | sed -n -e 's/^.*HugePages_Total\s*.\s*//p' | tr -d '\r' | tr -d '\n'
   register: internal_mem_hugepages_total
   ignore_errors: yes
 
@@ -65,7 +65,7 @@
   ignore_errors: yes
 
 - name: gather internal_mem_hugepages_free
-  raw: cat /proc/meminfo 2>/dev/null | grep '^HugePages_Free\s*' | sed -n -e 's/^.*HugePages_Free\s*.\s*//p'
+  raw: cat /proc/meminfo 2>/dev/null | grep '^HugePages_Free\s*' | sed -n -e 's/^.*HugePages_Free\s*.\s*//p' | tr -d '\r' | tr -d '\n'
   register: internal_mem_hugepages_free
   ignore_errors: yes
 
@@ -75,7 +75,7 @@
   ignore_errors: yes
 
 - name: gather internal_mem_hugepages_size
-  raw: cat /proc/meminfo 2>/dev/null | grep '^Hugepagesize\s*' | sed -n -e 's/^.*Hugepagesize\s*.\s*//p'
+  raw: cat /proc/meminfo 2>/dev/null | grep '^Hugepagesize\s*' | sed -n -e 's/^.*Hugepagesize\s*.\s*//p' | tr -d '\r' | tr -d '\n'
   register: internal_mem_hugepages_size
   ignore_errors: yes
 

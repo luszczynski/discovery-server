@@ -5,7 +5,7 @@
     internal_host_started_processing_role: "jboss_type"
 
 - name: gather jboss.processes
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep"
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr -d '\r' | tr -d '\n'
   register: internal_jboss_processes
   ignore_errors: yes
   when: 'jboss_eap'
@@ -47,7 +47,7 @@
   when: 'jboss_eap'
 
 - name: Gather number of EAP instances
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "\-D\[Server:" | wc -l
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "\-D\[Server:" | wc -l | tr -d '\r' | tr -d '\n'
   register: internal_eap_number_instances
   ignore_errors: yes
   when: 'jboss_eap'
