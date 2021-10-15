@@ -1,0 +1,8 @@
+= discovery-server
+
+Red Hat Discovery Server Customization (Quipucords)
+
+== Build image
+
+docker build -t my-qpc .
+podman build -t my-qpc .

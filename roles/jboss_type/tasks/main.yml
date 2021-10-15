@@ -1,0 +1,95 @@
+---
+
+- name: internal_host_started_processing_role
+  set_fact:
+    internal_host_started_processing_role: "jboss_type"
+
+- name: gather jboss.processes
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep"
+  register: internal_jboss_processes
+  ignore_errors: yes
+  when: 'jboss_eap'
+
+- name: set jboss_processes fact
+  set_fact:
+    jboss_processes: "{{ internal_jboss_processes.stdout }}"
+  ignore_errors: yes
+  when: 'jboss_eap'
+
+- name: check if this machine is the master controller or host controller
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=host-config=)[^ ]+' | grep -i slave
+  register: internal_controller_check
+  ignore_errors: yes
+  when: 'jboss_eap'
+
+- name: set domain controller fact
+  set_fact:
+    domain_controller: "{{ internal_controller_check.rc != 0 }}"
+  ignore_errors: yes
+  when: 'jboss_eap'
+
+- name: set host controller fact
+  set_fact:
+    host_controller: "{{ internal_controller_check.rc == 0 }}"
+  ignore_errors: yes
+  when: 'jboss_eap'
+
+- name: standalone check
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "\-D\[Standalone\]"
+  register: internal_standalone_check
+  ignore_errors: yes
+  when: 'jboss_eap'
+
+- name: set standalone check fact
+  set_fact:
+    standalone: "{{ internal_standalone_check.rc == 0 }}"
+  ignore_errors: yes
+  when: 'jboss_eap'
+
+- name: Gather number of EAP instances
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "\-D\[Server:" | wc -l
+  register: internal_eap_number_instances
+  ignore_errors: yes
+  when: 'jboss_eap'
+
+- name: set number of EAP instances fact
+  set_fact:
+    eap_number_instances: "{{ internal_eap_number_instances.stdout }}"
+  ignore_errors: yes
+  when: 'jboss_eap'
+
+
+
+
+
+
+
+
+# - name: check if this machine is the host controller
+#   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "\-D\[Host Controller\]"
+#   register: internal_host_controller_check
+#   ignore_errors: yes
+#   when: 'jboss_eap'
+
+# - name: set domain controller fact
+#   set_fact:
+#     jboss_processes: "{{ internal_jboss_processes }}"
+#   ignore_errors: yes
+#   when: 'jboss_eap'
+
+# - name: Gather number of EAP instances
+#   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "\-D\[Server:" | wc -l
+#   register: internal_eap_number_instances
+#   ignore_errors: yes
+#   when: 'jboss_eap'
+
+# - name: set number of EAP instances fact
+#   set_fact:
+#     eap_number_instances: "{{ internal_eap_number_instances.stdout }}"
+#   ignore_errors: yes
+#   when: 'jboss_eap'
+
+
+# -Djboss.domain.base.dir=/opt/jboss/jboss-eap-financeiro/dc
+# -Djboss.home.dir=/opt/jboss/jboss-eap-financeiro
+
