@@ -14,8 +14,23 @@
   ignore_errors: yes
   when: 'jboss_eap and domain_controller'
 
+- name: Copy lista-deploy.sh to tmp
+  copy:
+    src: lista-deploy.sh
+    dest: /tmp/lista-deploy.sh
+    mode: 0755
+  ignore_errors: yes
+  when: 'jboss_eap and domain_controller'
+
 - name: get all jboss domain deployment
-  shell: "../files/lista-deploy.sh {{ jboss_domain_base_dir_internal.stdout }}/configuration/domain.xml"
+  shell: "/tmp/lista-deploy.sh {{ jboss_domain_base_dir_internal.stdout }}/configuration/domain.xml"
   register: jboss_domain_deployment_json
   ignore_errors: yes
   when: 'jboss_eap and domain_controller'
+
+- name: Loop over SHAs
+  shell: "echo {{ item.name }},{{ item.sha1 }} >> /tmp/{{inventory_hostname}}.txt"
+  ignore_errors: yes
+  delegate_to: localhost
+  when: 'jboss_eap and domain_controller'
+  with_items: "{{ (jboss_domain_deployment_json.stdout | from_json) }}"

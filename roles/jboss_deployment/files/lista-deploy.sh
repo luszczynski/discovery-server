@@ -16,7 +16,7 @@ for (( d=1; d<=$QTD_DEPLOYS; d++))
 do
     echo "{"
 
-    echo "\"nome\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@name)" -)\",";
+    echo "\"name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@name)" -)\",";
 
     echo "\"runtime-name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@runtime-name)" -)\",";
 
