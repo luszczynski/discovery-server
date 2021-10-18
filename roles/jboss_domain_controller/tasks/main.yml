@@ -35,7 +35,7 @@
   when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc != 0'
 
 - name: Loop over SHAs
-  shell: "echo {{ item.name }},{{ item.sha1 }} >> /tmp/{{inventory_hostname}}.txt"
+  shell: "grep {{ item.sha1 }} /tmp/dc-{{inventory_hostname}}.txt || echo {{ item.name }},{{ item.sha1 }} >> /tmp/dc-{{inventory_hostname}}.txt"
   ignore_errors: yes
   delegate_to: localhost
   when: 'jboss_eap and domain_controller'

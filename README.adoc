@@ -32,6 +32,10 @@ podman stop my-discovery
 podman rm my-dsc-db
 podman rm my-discovery
 
+git pull
+
+podman build -t my-qpc .
+
 podman run --name my-discovery -p 9443:443 -d -e USE_SUPERVISORD=true -e QPC_SERVER_TIMEOUT=120 -e QPC_DBMS_USER=postgres -e QPC_DBMS_PASSWORD=teste123 -e ANSIBLE_LOG_LEVEL=7 -e NETWORK_CONNECT_JOB_TIMEOUT=600 -e NETWORK_INSPECT_JOB_TIMEOUT=10800 -e QPC_SERVER_USERNAME=admin -e QPC_SERVER_USER_EMAIL=admin@example.com -e QPC_SERVER_PASSWORD=teste123 -v /root/discovery/server/volumes/sshkeys/:/sshkeys:z -v /root/discovery/server/volumes/data/:/var/data:z -v /root/discovery/server/volumes/log/:/var/log:z -i my-qpc
 
 podman run --name my-dsc-db --network=container:my-discovery -e POSTGRESQL_USER=postgres -e POSTGRESQL_PASSWORD=teste123 -e POSTGRESQL_DATABASE=dsc-db -v /root/discovery/db/volume/data:/var/lib/pgsql/data:z -d registry.redhat.io/rhel8/postgresql-96:latest
