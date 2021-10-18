@@ -23,13 +23,13 @@
   when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc != 0'
 
 - name: get all jboss domain deployment using jboss_domain_base_dir_internal
-  shell: "/tmp/lista-deploy.sh {{ jboss_domain_base_dir_internal.stdout }}/configuration/domain.xml"
+  shell: "/tmp/lista-deploy.sh {{ jboss_domain_base_dir_internal.stdout | trim }}/configuration/domain.xml"
   register: jboss_domain_deployment_json
   ignore_errors: yes
   when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc == 0'
 
 - name: get all jboss domain deployment using jboss.home.dir
-  shell: "/tmp/lista-deploy.sh {{ jboss_home_dir_internal.stdout }}/domain/configuration/domain.xml"
+  shell: "/tmp/lista-deploy.sh {{ jboss_home_dir_internal.stdout | trim }}/domain/configuration/domain.xml"
   register: jboss_domain_deployment_json
   ignore_errors: yes
   when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc != 0'
@@ -39,4 +39,4 @@
   ignore_errors: yes
   delegate_to: localhost
   when: 'jboss_eap and domain_controller'
-  with_items: "{{ (jboss_domain_deployment_json.stdout | from_json) }}"
+  with_items: "{{ (jboss_domain_deployment_json.stdout | trim | from_json) }}"
