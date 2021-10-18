@@ -1,4 +1,5 @@
-FROM registry.redhat.io/discovery-tech-preview/discovery-server-rhel8:0.9.2-9
+# FROM registry.redhat.io/discovery-tech-preview/discovery-server-rhel8:0.9.2-9
+FROM registry.redhat.io/discovery-tech-preview/discovery-server-rhel8:latest
 
 COPY ./roles/jboss_type/ /usr/lib/python3.6/site-packages/discovery-server/scanner/network/runner/roles/jboss_type
 COPY ./roles/jboss_domain_controller/ /usr/lib/python3.6/site-packages/discovery-server/scanner/network/runner/roles/jboss_domain_controller
