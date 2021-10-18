@@ -2,18 +2,6 @@
   set_fact:
     internal_host_started_processing_role: "jboss_deployment"
 
-- name: get jboss.home.dir path
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=jboss.home.dir=)[^ ]+' | tr -d '\r' | tr -d '\n'
-  register: jboss_home_dir_internal
-  ignore_errors: yes
-  when: 'jboss_eap and domain_controller'
-
-- name: get jboss.domain.base.dir path
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=jboss.domain.base.dir=)[^ ]+' | tr -d '\r' | tr -d '\n'
-  register: jboss_domain_base_dir_internal
-  ignore_errors: yes
-  when: 'jboss_eap and domain_controller'
-
 - name: Copy lista-deploy.sh to tmp
   copy:
     src: lista-deploy.sh
@@ -22,11 +10,29 @@
   ignore_errors: yes
   when: 'jboss_eap and domain_controller'
 
-- name: get all jboss domain deployment
+- name: get jboss.domain.base.dir path
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=jboss.domain.base.dir=)[^ ]+'
+  register: jboss_domain_base_dir_internal
+  ignore_errors: yes
+  when: 'jboss_eap and domain_controller'
+
+- name: get jboss.home.dir path
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=jboss.home.dir=)[^ ]+'
+  register: jboss_home_dir_internal
+  ignore_errors: yes
+  when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc != 0'
+
+- name: get all jboss domain deployment using jboss_domain_base_dir_internal
   shell: "/tmp/lista-deploy.sh {{ jboss_domain_base_dir_internal.stdout }}/configuration/domain.xml"
   register: jboss_domain_deployment_json
   ignore_errors: yes
-  when: 'jboss_eap and domain_controller'
+  when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc == 0'
+
+- name: get all jboss domain deployment using jboss.home.dir
+  shell: "/tmp/lista-deploy.sh {{ jboss_home_dir_internal.stdout }}/domain/configuration/domain.xml"
+  register: jboss_domain_deployment_json
+  ignore_errors: yes
+  when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc != 0'
 
 - name: Loop over SHAs
   shell: "echo {{ item.name }},{{ item.sha1 }} >> /tmp/{{inventory_hostname}}.txt"
