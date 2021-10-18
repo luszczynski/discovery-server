@@ -16,7 +16,7 @@
   ignore_errors: yes
   when: 'jboss_eap'
 
-- name: check if this machine is the master controller or host controller
+- name: check if this machine is the domain controller or host controller
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=host-config=)[^ ]+' | grep -i slave
   register: internal_controller_check
   ignore_errors: yes
@@ -27,6 +27,18 @@
     domain_controller: "{{ internal_controller_check.rc != 0 }}"
   ignore_errors: yes
   when: 'jboss_eap'
+
+- name: get domain controller host
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=master.address=|master-address=)[^ ]+' | uniq  | tr -d '\r' | tr -d '\n'
+  register: internal_domain_controller_host
+  ignore_errors: yes
+  when: 'jboss_eap and domain_controller'
+
+- name: set domain controller host fact
+  set_fact:
+    domain_controller_host: "{{ internal_domain_controller_host.stdout }}"
+  ignore_errors: yes
+  when: 'jboss_eap and domain_controller'
 
 - name: set host controller fact
   set_fact:

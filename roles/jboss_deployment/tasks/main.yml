@@ -1,3 +1,21 @@
 - name: internal_host_started_processing_role
   set_fact:
     internal_host_started_processing_role: "jboss_deployment"
+
+- name: get jboss.home.dir path
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=jboss.home.dir=)[^ ]+' | tr -d '\r' | tr -d '\n'
+  register: jboss_home_dir_internal
+  ignore_errors: yes
+  when: 'jboss_eap and domain_controller'
+
+- name: get jboss.domain.base.dir path
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=jboss.domain.base.dir=)[^ ]+' | tr -d '\r' | tr -d '\n'
+  register: jboss_domain_base_dir_internal
+  ignore_errors: yes
+  when: 'jboss_eap and domain_controller'
+
+- name: get all jboss domain deployment
+  shell: "../files/lista-deploy.sh {{ jboss_domain_base_dir_internal.stdout }}/configuration/domain.xml"
+  register: jboss_domain_deployment_json
+  ignore_errors: yes
+  when: 'jboss_eap and domain_controller'
