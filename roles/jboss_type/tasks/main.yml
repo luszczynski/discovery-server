@@ -32,13 +32,13 @@
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=master.address=|master-address=)[^ ]+' | uniq  | tr -d '\r' | tr -d '\n'
   register: internal_domain_controller_host
   ignore_errors: yes
-  when: 'jboss_eap and internal_controller_check.rc != 0'
+  when: 'jboss_eap'
 
 - name: set domain controller host fact
   set_fact:
     domain_controller_host: "{{ internal_domain_controller_host.stdout }}"
   ignore_errors: yes
-  when: 'jboss_eap and internal_controller_check.rc != 0'
+  when: 'jboss_eap'
 
 - name: set host controller fact
   set_fact:
