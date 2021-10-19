@@ -43,11 +43,11 @@
 
 - name: Create empty fact for application 
   set_fact:
-    applications: ""
+    applications: []
 
 - name: Increment facts for application found
   set_fact:
-    applications: "{{ [applications] }} + {{ [item.stdout] }}"
+    applications: "{{ applications + [ item.stdout ] }}"
   ignore_errors: yes
   when: 'jboss_eap and host_controller'
   with_items: "{{ application_found.results }}"
