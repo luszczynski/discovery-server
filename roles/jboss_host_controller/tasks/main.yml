@@ -34,6 +34,8 @@
 #   with_items: "{{ jboss_host_controller_sha1.stdout_lines }}"
 
 - name: Find dc-* files
+  delegate_to: localhost
+  ignore_errors: yes
   find:
     paths: ["/tmp"]
     patterns: 'dc-*.txt'
@@ -45,7 +47,7 @@
   ignore_errors: yes
   delegate_to: localhost
   register: application_found
-  when: 'jboss_eap and host_controller and search_dc.matched != 0'
+  when: 'jboss_eap and host_controller and search_dc.matched > 0'
   with_items: "{{ jboss_host_controller_sha1.stdout_lines }}"
 
 - name: Create empty fact for application 
@@ -56,5 +58,5 @@
   set_fact:
     applications: "{{ applications + [ item.stdout ] }}"
   ignore_errors: yes
-  when: 'jboss_eap and host_controller and search_dc.matched != 0'
+  when: 'jboss_eap and host_controller and search_dc.matched > 0'
   with_items: "{{ application_found.results }}"
