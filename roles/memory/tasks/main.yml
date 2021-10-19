@@ -5,81 +5,81 @@
     internal_host_started_processing_role: "memory"
 
 - name: gather internal_mem_memtotal
-  raw: cat /proc/meminfo 2>/dev/null | grep '^MemTotal\s*' | sed -n -e 's/^.*MemTotal\s*.\s*//p' | tr -d '\r' | tr -d '\n'
+  raw: cat /proc/meminfo 2>/dev/null | grep '^MemTotal\s*' | sed -n -e 's/^.*MemTotal\s*.\s*//p'
   register: internal_mem_memtotal
   ignore_errors: yes
 
 - name: set mem_memtotal fact
   set_fact:
-    mem_memtotal: "{{internal_mem_memtotal.stdout}}"
+    mem_memtotal: "{{ internal_mem_memtotal.stdout | trim }}"
   ignore_errors: yes
 
 - name: gather internal_mem_memfree
-  raw: cat /proc/meminfo 2>/dev/null | grep '^MemFree\s*' | sed -n -e 's/^.*MemFree\s*.\s*//p' | tr -d '\r' | tr -d '\n'
+  raw: cat /proc/meminfo 2>/dev/null | grep '^MemFree\s*' | sed -n -e 's/^.*MemFree\s*.\s*//p'
   register: internal_mem_memfree
   ignore_errors: yes
 
 - name: set mem_memfree fact
   set_fact:
-    mem_memfree: "{{internal_mem_memfree.stdout}}"
+    mem_memfree: "{{ internal_mem_memfree.stdout | trim }}"
   ignore_errors: yes
 
 - name: gather internal_mem_memavailable
-  raw: cat /proc/meminfo 2>/dev/null | grep '^MemAvailable\s*' | sed -n -e 's/^.*MemAvailable\s*.\s*//p' | tr -d '\r' | tr -d '\n'
+  raw: cat /proc/meminfo 2>/dev/null | grep '^MemAvailable\s*' | sed -n -e 's/^.*MemAvailable\s*.\s*//p'
   register: internal_mem_memavailable
   ignore_errors: yes
 
 - name: set mem_memavailable fact
   set_fact:
-    mem_memavailable: "{{internal_mem_memavailable.stdout}}"
+    mem_memavailable: "{{ internal_mem_memavailable.stdout | trim }}"
   ignore_errors: yes
 
 - name: gather internal_mem_swaptotal
-  raw: cat /proc/meminfo 2>/dev/null | grep '^SwapTotal\s*' | sed -n -e 's/^.*SwapTotal\s*.\s*//p' | tr -d '\r' | tr -d '\n'
+  raw: cat /proc/meminfo 2>/dev/null | grep '^SwapTotal\s*' | sed -n -e 's/^.*SwapTotal\s*.\s*//p'
   register: internal_mem_swaptotal
   ignore_errors: yes
 
 - name: set mem_swaptotal fact
   set_fact:
-    mem_swaptotal: "{{internal_mem_swaptotal.stdout}}"
+    mem_swaptotal: "{{ internal_mem_swaptotal.stdout | trim }}"
   ignore_errors: yes
 
 - name: gather internal_mem_swapfree
-  raw: cat /proc/meminfo 2>/dev/null | grep '^SwapFree\s*' | sed -n -e 's/^.*SwapFree\s*.\s*//p' | tr -d '\r' | tr -d '\n'
+  raw: cat /proc/meminfo 2>/dev/null | grep '^SwapFree\s*' | sed -n -e 's/^.*SwapFree\s*.\s*//p'
   register: internal_mem_swapfree
   ignore_errors: yes
 
 - name: set mem_swapfree fact
   set_fact:
-    mem_swapfree: "{{internal_mem_swaptotal.stdout}}"
+    mem_swapfree: "{{ internal_mem_swaptotal.stdout | trim }}"
   ignore_errors: yes
 
 - name: gather internal_mem_hugepages_total
-  raw: cat /proc/meminfo 2>/dev/null | grep '^HugePages_Total\s*' | sed -n -e 's/^.*HugePages_Total\s*.\s*//p' | tr -d '\r' | tr -d '\n'
+  raw: cat /proc/meminfo 2>/dev/null | grep '^HugePages_Total\s*' | sed -n -e 's/^.*HugePages_Total\s*.\s*//p'
   register: internal_mem_hugepages_total
   ignore_errors: yes
 
 - name: set mem_hugepages_total fact
   set_fact:
-    mem_hugepages_total: "{{internal_mem_hugepages_total.stdout}}"
+    mem_hugepages_total: "{{ internal_mem_hugepages_total.stdout | trim }}"
   ignore_errors: yes
 
 - name: gather internal_mem_hugepages_free
-  raw: cat /proc/meminfo 2>/dev/null | grep '^HugePages_Free\s*' | sed -n -e 's/^.*HugePages_Free\s*.\s*//p' | tr -d '\r' | tr -d '\n'
+  raw: cat /proc/meminfo 2>/dev/null | grep '^HugePages_Free\s*' | sed -n -e 's/^.*HugePages_Free\s*.\s*//p'
   register: internal_mem_hugepages_free
   ignore_errors: yes
 
 - name: set mem_hugepages_free fact
   set_fact:
-    mem_hugepages_free: "{{internal_mem_hugepages_free.stdout}}"
+    mem_hugepages_free: "{{ internal_mem_hugepages_free.stdout | trim }}"
   ignore_errors: yes
 
 - name: gather internal_mem_hugepages_size
-  raw: cat /proc/meminfo 2>/dev/null | grep '^Hugepagesize\s*' | sed -n -e 's/^.*Hugepagesize\s*.\s*//p' | tr -d '\r' | tr -d '\n'
+  raw: cat /proc/meminfo 2>/dev/null | grep '^Hugepagesize\s*' | sed -n -e 's/^.*Hugepagesize\s*.\s*//p'
   register: internal_mem_hugepages_size
   ignore_errors: yes
 
 - name: set mem_hugepages_size fact
   set_fact:
-    mem_hugepages_size: "{{internal_mem_hugepages_size.stdout}}"
+    mem_hugepages_size: "{{ internal_mem_hugepages_size.stdout | trim }}"
   ignore_errors: yes
