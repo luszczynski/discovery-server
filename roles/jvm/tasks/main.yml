@@ -17,7 +17,7 @@
 #   when: 'jboss_eap'
 
 - name: gather internal_xms_size
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=xms)[^ ]+'
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=xms)[^ ]+'
   register: internal_xms_size
   ignore_errors: yes
   when: 'jboss_eap'
@@ -29,7 +29,7 @@
   when: 'jboss_eap'
 
 - name: gather internal_xmx_size
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=xmx)[^ ]+'
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=xmx)[^ ]+'
   register: internal_xmx_size
   ignore_errors: yes
   when: 'jboss_eap'
@@ -37,6 +37,18 @@
 - name: set xmx_size fact
   set_fact:
     xmx_size: "{{ internal_xmx_size.stdout | trim }}"
+  ignore_errors: yes
+  when: 'jboss_eap'
+
+- name: gather internal max perm size
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=MaxPermSize=)[^ ]+'
+  register: internal_max_perm_size
+  ignore_errors: yes
+  when: 'jboss_eap'
+
+- name: set internal max perm size fact
+  set_fact:
+    max_perm_size: "{{ internal_max_perm_size.stdout | trim }}"
   ignore_errors: yes
   when: 'jboss_eap'
 
