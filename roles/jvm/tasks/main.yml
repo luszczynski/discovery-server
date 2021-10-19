@@ -4,6 +4,18 @@
   set_fact:
     internal_host_started_processing_role: "jvm"
 
+# - name: gather internal_xms_size for Process Controller
+#   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "Process Controller" | grep -Pio '(?<=xms)[^ ]+' | uniq
+#   register: internal_process_controller_xms_size
+#   ignore_errors: yes
+#   when: 'jboss_eap'
+
+# - name: set xms_size fact for process controller
+#   set_fact:
+#     process_controller_xms_size: "{{ internal_process_controller_xms_size.stdout | trim }}"
+#   ignore_errors: yes
+#   when: 'jboss_eap'
+
 - name: gather internal_xms_size
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=xms)[^ ]+'
   register: internal_xms_size
@@ -12,7 +24,7 @@
 
 - name: set xms_size fact
   set_fact:
-    xms_size: "{{internal_xms_size.stdout}}"
+    xms_size: "{{ internal_xms_size.stdout | trim }}"
   ignore_errors: yes
   when: 'jboss_eap'
 
@@ -24,18 +36,18 @@
 
 - name: set xmx_size fact
   set_fact:
-    xmx_size: "{{internal_xmx_size.stdout}}"
+    xmx_size: "{{ internal_xmx_size.stdout | trim }}"
   ignore_errors: yes
   when: 'jboss_eap'
 
 - name: gather internal_command_line_jboss
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr -d '\r' | tr -d '\n'
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep"
   register: internal_command_line_jboss
   ignore_errors: yes
   when: 'jboss_eap'
 
 - name: set command_line_jboss fact
   set_fact:
-    command_line_jboss: "{{internal_command_line_jboss.stdout}}"
+    command_line_jboss: "{{ internal_command_line_jboss.stdout | trim }}"
   ignore_errors: yes
   when: 'jboss_eap'

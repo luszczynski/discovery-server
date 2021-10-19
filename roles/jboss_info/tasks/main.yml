@@ -5,19 +5,19 @@
     internal_host_started_processing_role: "jboss_info"
 
 - name: gather jboss.processes
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr -d '\r' | tr -d '\n'
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep"
   register: internal_jboss_processes
   ignore_errors: yes
   when: 'jboss_eap'
 
 - name: set jboss_processes fact
   set_fact:
-    jboss_processes: "{{ internal_jboss_processes.stdout }}"
+    jboss_processes: "{{ internal_jboss_processes.stdout | trim }}"
   ignore_errors: yes
   when: 'jboss_eap'
 
 - name: check if this machine is the domain controller or host controller
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=host-config=)[^ ]+' | grep -i slave
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=host-config=)[^ ]+' | grep -i slave
   register: internal_controller_check
   ignore_errors: yes
   when: 'jboss_eap'
@@ -28,17 +28,17 @@
   ignore_errors: yes
   when: 'jboss_eap'
 
-# - name: get domain controller host
-#   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=master.address=|master-address=)[^ ]+' | uniq  | tr -d '\r' | tr -d '\n'
-#   register: internal_domain_controller_host
-#   ignore_errors: yes
-#   when: 'jboss_eap'
+- name: get domain controller host
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=master.address=|master-address=)[^ ]+' | uniq
+  register: internal_domain_controller_host
+  ignore_errors: yes
+  when: 'jboss_eap'
 
-# - name: set domain controller host fact
-#   set_fact:
-#     domain_controller_host: "{{ internal_domain_controller_host.stdout }}"
-#   ignore_errors: yes
-#   when: 'jboss_eap'
+- name: set domain controller host fact
+  set_fact:
+    domain_controller_host: "{{ internal_domain_controller_host.stdout | trim }}"
+  ignore_errors: yes
+  when: 'jboss_eap'
 
 - name: set host controller fact
   set_fact:
@@ -59,49 +59,13 @@
   when: 'jboss_eap'
 
 - name: Gather number of EAP instances
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "\-D\[Server:" | wc -l | tr -d '\r' | tr -d '\n'
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "\-D\[Server:" | wc -l
   register: internal_eap_number_instances
   ignore_errors: yes
   when: 'jboss_eap'
 
 - name: set number of EAP instances fact
   set_fact:
-    eap_number_instances: "{{ internal_eap_number_instances.stdout }}"
+    eap_number_instances: "{{ internal_eap_number_instances.stdout | trim }}"
   ignore_errors: yes
   when: 'jboss_eap'
-
-
-
-
-
-
-
-
-# - name: check if this machine is the host controller
-#   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "\-D\[Host Controller\]"
-#   register: internal_host_controller_check
-#   ignore_errors: yes
-#   when: 'jboss_eap'
-
-# - name: set domain controller fact
-#   set_fact:
-#     jboss_processes: "{{ internal_jboss_processes }}"
-#   ignore_errors: yes
-#   when: 'jboss_eap'
-
-# - name: Gather number of EAP instances
-#   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "\-D\[Server:" | wc -l
-#   register: internal_eap_number_instances
-#   ignore_errors: yes
-#   when: 'jboss_eap'
-
-# - name: set number of EAP instances fact
-#   set_fact:
-#     eap_number_instances: "{{ internal_eap_number_instances.stdout }}"
-#   ignore_errors: yes
-#   when: 'jboss_eap'
-
-
-# -Djboss.domain.base.dir=/opt/jboss/jboss-eap-financeiro/dc
-# -Djboss.home.dir=/opt/jboss/jboss-eap-financeiro
-

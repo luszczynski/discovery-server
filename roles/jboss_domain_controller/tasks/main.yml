@@ -11,13 +11,13 @@
   when: 'jboss_eap and domain_controller'
 
 - name: get jboss.domain.base.dir path
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=jboss.domain.base.dir=)[^ ]+'
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=jboss.domain.base.dir=)[^ ]+'
   register: jboss_domain_base_dir_internal
   ignore_errors: yes
   when: 'jboss_eap and domain_controller'
 
 - name: get jboss.home.dir path
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | tr '[:upper:]' '[:lower:]' | grep -Po '(?<=jboss.home.dir=)[^ ]+'
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=jboss.home.dir=)[^ ]+'
   register: jboss_home_dir_internal
   ignore_errors: yes
   when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc != 0'
