@@ -26,9 +26,28 @@
   ignore_errors: yes
   when: 'jboss_eap and host_controller and jboss_domain_base_dir_internal.rc != 0'
 
-- name: Loop over SHAs
-  shell: "grep {{ item }} /tmp/hc-{{inventory_hostname}}.txt || echo {{ item }} >> /tmp/hc-{{inventory_hostname}}.txt"
+# - name: Loop over SHAs
+#   shell: "grep {{ item }} /tmp/hc-{{inventory_hostname}}.txt || echo {{ item }} >> /tmp/hc-{{inventory_hostname}}.txt"
+#   ignore_errors: yes
+#   delegate_to: localhost
+#   when: 'jboss_eap and host_controller'
+#   with_items: "{{ jboss_host_controller_sha1.stdout_lines }}"
+
+- name: Search application
+  shell: "grep {{ item }} /tmp/dc-*.txt | cut -d, -f1 | uniq"
   ignore_errors: yes
   delegate_to: localhost
+  register: application_found
   when: 'jboss_eap and host_controller'
   with_items: "{{ jboss_host_controller_sha1.stdout_lines }}"
+
+- name: Create empty fact for application 
+  set_fact:
+    applications: ""
+
+- name: Increment facts for application found
+  set_fact:
+    applications: "{{ applications + item.stdout }}"
+  ignore_errors: yes
+  when: 'jboss_eap and host_controller'
+  with_items: "{{ application_found.results }}"

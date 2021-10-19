@@ -1,6 +1,6 @@
 - name: internal_host_started_processing_role
   set_fact:
-    internal_host_started_processing_role: "jboss_deployment"
+    internal_host_started_processing_role: "jboss_domain_controller"
 
 - name: Copy lista-deploy.sh to tmp
   copy:
