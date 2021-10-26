@@ -2,6 +2,52 @@
   set_fact:
     internal_host_started_processing_role: "jboss_domain_controller"
 
+- name: Find all domain.xml using eap_home_candidates
+  shell: "find {{ item }} -name domain.xml"
+  ignore_errors: yes
+  register: jboss_domain_xml_files_list
+  when: 'jboss_eap and domain_controller'
+  with_items: "{{ eap_home_candidates }}"
+
+- name: get all jboss domain deployment using eap_home_candidates
+  shell:
+    cmd: |
+
+      DOMAIN_FULL_PATH="{{ item.stdout }}"
+
+      QTD_DEPLOYS=`cat $DOMAIN_FULL_PATH | sed 's/xmlns=/ns=/g' | xmllint --xpath 'count(/domain/deployments/deployment)' -`
+
+      for (( d=1; d<=$QTD_DEPLOYS; d++))
+      do
+        echo "{"
+
+        echo "\"name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@name)" -)\",";
+
+        echo "\"runtime-name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@runtime-name)" -)\",";
+
+        echo "\"sha1\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/content/@sha1)" -)\"";
+
+        echo "}"
+        
+        echo ","
+      done
+  register: jboss_domain_deployment_json
+  ignore_errors: yes
+  when: 'jboss_eap and domain_controller'
+  with_items: jboss_domain_xml_files_list.results
+
+- name: Remove last comma
+  set_fact:
+    jboss_domain_deployment_json: "{{ jboss_domain_deployment_json | regex_replace('.$','') }}"
+  ignore_errors: yes
+  when: 'jboss_eap and host_controller'
+
+- name: Append []
+  set_fact:
+    jboss_domain_deployment_json: "{{ '[' + jboss_domain_deployment_json + ']' }}"
+  ignore_errors: yes
+  when: 'jboss_eap and host_controller'
+
 # - name: Copy lista-deploy.sh to tmp
 #   copy:
 #     src: lista-deploy.sh
@@ -10,75 +56,79 @@
 #   ignore_errors: yes
 #   when: 'jboss_eap and domain_controller'
 
-- name: get jboss.domain.base.dir path
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=jboss.domain.base.dir=)[^ ]+'
-  register: jboss_domain_base_dir_internal
-  ignore_errors: yes
-  when: 'jboss_eap and domain_controller'
+# {{ jboss_eap_running_paths }}
 
-- name: get jboss.home.dir path
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=jboss.home.dir=)[^ ]+'
-  register: jboss_home_dir_internal
-  ignore_errors: yes
-  when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc != 0'
+# {{ eap_home_candidates }}
 
-- name: get all jboss domain deployment using jboss_domain_base_dir_internal
-  shell:
-    cmd: |
+# - name: get jboss.domain.base.dir path
+#   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=jboss.domain.base.dir=)[^ ]+'
+#   register: jboss_domain_base_dir_internal
+#   ignore_errors: yes
+#   when: 'jboss_eap and domain_controller'
 
-      DOMAIN_FULL_PATH="{{ jboss_domain_base_dir_internal.stdout | trim }}/configuration/domain.xml"
+# - name: get jboss.home.dir path
+#   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=jboss.home.dir=)[^ ]+'
+#   register: jboss_home_dir_internal
+#   ignore_errors: yes
+#   when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc != 0'
 
-      QTD_DEPLOYS=`cat $DOMAIN_FULL_PATH | sed 's/xmlns=/ns=/g' | xmllint --xpath 'count(/domain/deployments/deployment)' -`
+# - name: get all jboss domain deployment using jboss_domain_base_dir_internal
+#   shell:
+#     cmd: |
 
-      echo "["
-      for (( d=1; d<=$QTD_DEPLOYS; d++))
-      do
-        echo "{"
+#       DOMAIN_FULL_PATH="{{ jboss_domain_base_dir_internal.stdout | trim }}/configuration/domain.xml"
 
-        echo "\"name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@name)" -)\",";
+#       QTD_DEPLOYS=`cat $DOMAIN_FULL_PATH | sed 's/xmlns=/ns=/g' | xmllint --xpath 'count(/domain/deployments/deployment)' -`
 
-        echo "\"runtime-name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@runtime-name)" -)\",";
+#       echo "["
+#       for (( d=1; d<=$QTD_DEPLOYS; d++))
+#       do
+#         echo "{"
 
-        echo "\"sha1\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/content/@sha1)" -)\"";
+#         echo "\"name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@name)" -)\",";
 
-        echo "}"
-        if [[ $QTD_DEPLOYS > 1 && $d != $QTD_DEPLOYS ]]; then
-            echo ","
-        fi
-      done
-      echo "]" 
-  register: jboss_domain_deployment_json
-  ignore_errors: yes
-  when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc == 0'
+#         echo "\"runtime-name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@runtime-name)" -)\",";
 
-- name: get all jboss domain deployment using jboss.home.dir
-  shell:
-    cmd: |
+#         echo "\"sha1\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/content/@sha1)" -)\"";
 
-      DOMAIN_FULL_PATH="{{ jboss_home_dir_internal.stdout | trim }}/domain/configuration/domain.xml"
+#         echo "}"
+#         if [[ $QTD_DEPLOYS > 1 && $d != $QTD_DEPLOYS ]]; then
+#             echo ","
+#         fi
+#       done
+#       echo "]" 
+#   register: jboss_domain_deployment_json
+#   ignore_errors: yes
+#   when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc == 0'
 
-      QTD_DEPLOYS=`cat $DOMAIN_FULL_PATH | sed 's/xmlns=/ns=/g' | xmllint --xpath 'count(/domain/deployments/deployment)' -`
+# - name: get all jboss domain deployment using jboss.home.dir
+#   shell:
+#     cmd: |
 
-      echo "["
-      for (( d=1; d<=$QTD_DEPLOYS; d++))
-      do
-        echo "{"
+#       DOMAIN_FULL_PATH="{{ jboss_home_dir_internal.stdout | trim }}/domain/configuration/domain.xml"
 
-        echo "\"name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@name)" -)\",";
+#       QTD_DEPLOYS=`cat $DOMAIN_FULL_PATH | sed 's/xmlns=/ns=/g' | xmllint --xpath 'count(/domain/deployments/deployment)' -`
 
-        echo "\"runtime-name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@runtime-name)" -)\",";
+#       echo "["
+#       for (( d=1; d<=$QTD_DEPLOYS; d++))
+#       do
+#         echo "{"
 
-        echo "\"sha1\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/content/@sha1)" -)\"";
+#         echo "\"name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@name)" -)\",";
 
-        echo "}"
-        if [[ $QTD_DEPLOYS > 1 && $d != $QTD_DEPLOYS ]]; then
-            echo ","
-        fi
-      done
-      echo "]"
-  register: jboss_domain_deployment_json
-  ignore_errors: yes
-  when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc != 0'
+#         echo "\"runtime-name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@runtime-name)" -)\",";
+
+#         echo "\"sha1\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/content/@sha1)" -)\"";
+
+#         echo "}"
+#         if [[ $QTD_DEPLOYS > 1 && $d != $QTD_DEPLOYS ]]; then
+#             echo ","
+#         fi
+#       done
+#       echo "]"
+#   register: jboss_domain_deployment_json
+#   ignore_errors: yes
+#   when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc != 0'
 
 # - name: get all jboss domain deployment using jboss.home.dir
 #   shell: "/tmp/lista-deploy.sh {{ jboss_home_dir_internal.stdout | trim }}/domain/configuration/domain.xml"
