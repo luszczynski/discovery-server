@@ -17,20 +17,24 @@
 
       QTD_DEPLOYS=`cat $DOMAIN_FULL_PATH | sed 's/xmlns=/ns=/g' | xmllint --xpath 'count(/domain/deployments/deployment)' -`
 
-      for (( d=1; d<=$QTD_DEPLOYS; d++))
-      do
-        echo "{"
+      if [ $? -eq 0 ]; then
+        for (( d=1; d<=$QTD_DEPLOYS; d++))
+        do
+          echo "{"
 
-        echo "\"name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@name)" -)\",";
+          echo "\"name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@name)" -)\",";
 
-        echo "\"runtime-name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@runtime-name)" -)\",";
+          echo "\"runtime-name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@runtime-name)" -)\",";
 
-        echo "\"sha1\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/content/@sha1)" -)\"";
+          echo "\"sha1\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/content/@sha1)" -)\"";
 
-        echo "}"
-        
-        echo ","
-      done
+          echo "}"
+          
+          echo ","
+        done
+      fi
+
+      
   register: jboss_domain_deployment_json
   ignore_errors: yes
   when: 'jboss_eap and domain_controller'
@@ -44,13 +48,20 @@
   set_fact:
     jboss_domain_deployment_json: "{{ jboss_domain_deployment_json | regex_replace('.$','') }}"
   ignore_errors: yes
-  when: 'jboss_eap and host_controller'
+  when: 'jboss_eap and domain_controller'
 
 - name: Append []
   set_fact:
     jboss_domain_deployment_json: "{{ '[' + jboss_domain_deployment_json + ']' }}"
   ignore_errors: yes
-  when: 'jboss_eap and host_controller'
+  when: 'jboss_eap and domain_controller'
+
+- name: Loop over SHAs
+  shell: "grep {{ item.sha1 }} /tmp/dc-{{inventory_hostname}}.txt || echo {{ item.name }},{{ item.sha1 }} >> /tmp/dc-{{inventory_hostname}}.txt"
+  ignore_errors: yes
+  delegate_to: localhost
+  when: 'jboss_eap and domain_controller'
+  with_items: "{{ (jboss_domain_deployment_json.results | trim | from_json) }}"
 
 # - name: Copy lista-deploy.sh to tmp
 #   copy:
@@ -140,9 +151,3 @@
 #   ignore_errors: yes
 #   when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc != 0'
 
-- name: Loop over SHAs
-  shell: "grep {{ item.sha1 }} /tmp/dc-{{inventory_hostname}}.txt || echo {{ item.name }},{{ item.sha1 }} >> /tmp/dc-{{inventory_hostname}}.txt"
-  ignore_errors: yes
-  delegate_to: localhost
-  when: 'jboss_eap and domain_controller'
-  with_items: "{{ (jboss_domain_deployment_json.stdout | trim | from_json) }}"
