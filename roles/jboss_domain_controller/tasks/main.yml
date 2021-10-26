@@ -17,7 +17,7 @@
   shell:
     cmd: |
 
-      DOMAIN_FULL_PATH="{{ item }}"
+      DOMAIN_FULL_PATH="{{ item.stdout }}"
 
       QTD_DEPLOYS=`cat $DOMAIN_FULL_PATH | sed 's/xmlns=/ns=/g' | xmllint --xpath 'count(/domain/deployments/deployment)' -`
 
@@ -38,7 +38,7 @@
   register: jboss_domain_deployment_json
   ignore_errors: yes
   when: 'jboss_eap and domain_controller'
-  with_items: jboss_domain_xml_files_list.results
+  with_items: "{{ jboss_domain_xml_files_list.results }}"
 
 - name: Remove last comma
   set_fact:
