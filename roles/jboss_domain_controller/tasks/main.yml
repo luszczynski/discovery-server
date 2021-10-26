@@ -9,10 +9,6 @@
   when: 'jboss_eap and domain_controller'
   with_items: "{{ eap_home_candidates }}"
 
-- name: Debug
-  debug:
-    msg: "var jboss_domain_xml_files_list = {{ jboss_domain_xml_files_list }}"
-
 - name: get all jboss domain deployment using eap_home_candidates
   shell:
     cmd: |
@@ -39,6 +35,10 @@
   ignore_errors: yes
   when: 'jboss_eap and domain_controller'
   with_items: "{{ jboss_domain_xml_files_list.results }}"
+
+- name: Debug jboss_domain_deployment_json
+  debug:
+    msg: "var jboss_domain_deployment_json = {{ jboss_domain_deployment_json }}"
 
 - name: Remove last comma
   set_fact:
