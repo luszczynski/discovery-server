@@ -40,10 +40,6 @@
   when: 'jboss_eap and domain_controller'
   with_items: "{{ jboss_domain_xml_files_list.results }}"
 
-- name: Debug jboss_domain_deployment_json
-  debug:
-    msg: "var jboss_domain_deployment_json = {{ jboss_domain_deployment_json }}"
-
 - name: Remove last comma
   set_fact:
     jboss_domain_deployment_json: "{{ jboss_domain_deployment_json | regex_replace('.$','') }}"
@@ -61,7 +57,11 @@
   ignore_errors: yes
   delegate_to: localhost
   when: 'jboss_eap and domain_controller'
-  with_items: "{{ (jboss_domain_deployment_json.results | trim | from_json) }}"
+  with_items: "{{ (jboss_domain_deployment_json | trim | from_json) }}"
+
+- name: Debug jboss_domain_deployment_json
+  debug:
+    msg: "var jboss_domain_deployment_json = {{ jboss_domain_deployment_json | trim }}"
 
 # - name: Copy lista-deploy.sh to tmp
 #   copy:
