@@ -9,11 +9,15 @@
   when: 'jboss_eap and domain_controller'
   with_items: "{{ eap_home_candidates }}"
 
+- name: Debug
+  debug:
+    msg: "var jboss_domain_xml_files_list = {{ jboss_domain_xml_files_list }}"
+
 - name: get all jboss domain deployment using eap_home_candidates
   shell:
     cmd: |
 
-      DOMAIN_FULL_PATH="{{ item.stdout }}"
+      DOMAIN_FULL_PATH="{{ item }}"
 
       QTD_DEPLOYS=`cat $DOMAIN_FULL_PATH | sed 's/xmlns=/ns=/g' | xmllint --xpath 'count(/domain/deployments/deployment)' -`
 
