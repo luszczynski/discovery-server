@@ -15,9 +15,9 @@
 
       DOMAIN_FULL_PATH="{{ item.stdout }}"
 
-      QTD_DEPLOYS=`cat $DOMAIN_FULL_PATH | sed 's/xmlns=/ns=/g' | xmllint --xpath 'count(/domain/deployments/deployment)' -`
+      if [ -f "$DOMAIN_FULL_PATH" ]; then
+        QTD_DEPLOYS=`cat $DOMAIN_FULL_PATH | sed 's/xmlns=/ns=/g' | xmllint --xpath 'count(/domain/deployments/deployment)' -`
 
-      if [ $? -eq 0 ]; then
         for (( d=1; d<=$QTD_DEPLOYS; d++))
         do
           echo "{"
@@ -32,8 +32,9 @@
           
           echo ","
         done
+      else 
+          exit 1
       fi
-
       
   register: jboss_domain_deployment_json
   ignore_errors: yes
