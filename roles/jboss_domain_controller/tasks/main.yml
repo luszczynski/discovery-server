@@ -26,8 +26,15 @@
     msg: "var = {{ jboss_domain_xml_files_list.results }}"
   when: 'jboss_eap and domain_controller'
 
-- name: Generate app name and hash vars
-  shell: for (( d=1; d<=$(cat "{{ item.files[0].path }}" | sed 's/xmlns=/ns=/g' | xmllint --xpath 'count(/domain/deployments/deployment)' -); d++)); do cat "{{ item.files[0].path }}" | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@name)" -; echo -n ","; cat "{{ item.files[0].path }}" | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/content/@sha1)" - ; echo ; done
+#- name: Generate app name and hash vars
+#  shell: for (( d=1; d<=$(cat "{{ item.files[0].path }}" | sed 's/xmlns=/ns=/g' | xmllint --xpath 'count(/domain/deployments/deployment)' -); d++)); do cat "{{ item.files[0].path }}" | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@name)" -; echo -n ","; cat "{{ item.files[0].path }}" | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/content/@sha1)" - ; echo ; done
+#  register: name_hash_var
+#  ignore_errors: yes
+#  when: 'jboss_eap and domain_controller and item.matched > 0'
+#  with_items: "{{ jboss_domain_xml_files_list.results }}"
+
+- name: Obtem Hashes com base no domain.xml
+  shell: "cat {{ item.files[0].path }} | grep sha1 | grep -o '\".\"' | tr -d '\"' | while read -r hash; do cat {{ item.files[0].path }} | grep $hash -B3 | grep -o 'deployment name=\".\" ' | grep -o '\".*\"' | tr -d '\"' | tr -d '\\\n' ; echo \",$hash\"; done"
   register: name_hash_var
   ignore_errors: yes
   when: 'jboss_eap and domain_controller and item.matched > 0'
@@ -42,8 +49,8 @@
   set_fact:
     apps_internal: []
 
-- name: Generate array from string 
-  set_fact: 
+- name: Generate array from string
+  set_fact:
     apps_internal: "{{ apps_internal + item.stdout_lines }}"
   ignore_errors: yes
   when: 'jboss_eap and domain_controller'
@@ -109,13 +116,13 @@
 #           echo "\"sha1\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/content/@sha1)" -)\"";
 
 #           echo "}"
-          
+
 #           echo ","
 #         done
-#       else 
+#       else
 #           exit 1
 #       fi
-      
+
 #   register: jboss_domain_deployment_json
 #   ignore_errors: yes
 #   when: 'jboss_eap and domain_controller'
@@ -199,7 +206,7 @@
 #             echo ","
 #         fi
 #       done
-#       echo "]" 
+#       echo "]"
 #   register: jboss_domain_deployment_json
 #   ignore_errors: yes
 #   when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc == 0'
@@ -238,4 +245,3 @@
 #   register: jboss_domain_deployment_json
 #   ignore_errors: yes
 #   when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc != 0'
-
