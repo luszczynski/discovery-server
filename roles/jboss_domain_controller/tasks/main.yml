@@ -2,13 +2,6 @@
   set_fact:
     internal_host_started_processing_role: "jboss_domain_controller"
 
-#- name: Find all domain.xml using eap_home_candidates
-#  shell: "find {{ item }} -name domain.xml 2>/dev/null"
-#  ignore_errors: yes
-#  register: jboss_domain_xml_files_list
-#  when: 'jboss_eap and domain_controller'
-#  with_items: "{{ eap_home_candidates }}"
-
 - name: Find all domain.xml using eap_home_candidates
   find:
    paths: ["{{ item }}"]
@@ -26,13 +19,6 @@
     msg: "var = {{ jboss_domain_xml_files_list.results }}"
   when: 'jboss_eap and domain_controller'
 
-#- name: Generate app name and hash vars
-#  shell: for (( d=1; d<=$(cat "{{ item.files[0].path }}" | sed 's/xmlns=/ns=/g' | xmllint --xpath 'count(/domain/deployments/deployment)' -); d++)); do cat "{{ item.files[0].path }}" | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@name)" -; echo -n ","; cat "{{ item.files[0].path }}" | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/content/@sha1)" - ; echo ; done
-#  register: name_hash_var
-#  ignore_errors: yes
-#  when: 'jboss_eap and domain_controller and item.matched > 0'
-#  with_items: "{{ jboss_domain_xml_files_list.results }}"
-
 - name: Obtem Hashes com base no domain.xml
   shell: "cat {{ item.files[0].path }} | grep sha1 | grep -o '\".\"' | tr -d '\"' | while read -r hash; do cat {{ item.files[0].path }} | grep $hash -B3 | grep -o 'deployment name=\".\" ' | grep -o '\".*\"' | tr -d '\"' | tr -d '\\\n' ; echo \",$hash\"; done"
   register: name_hash_var
@@ -48,12 +34,13 @@
 - name: Create empty fact for applications
   set_fact:
     apps_internal: []
+  when: 'jboss_eap and domain_controller'
 
 - name: Generate array from string
   set_fact:
     apps_internal: "{{ apps_internal + item.stdout_lines }}"
   ignore_errors: yes
-  when: 'jboss_eap and domain_controller'
+  when: 'jboss_eap and domain_controller and (name_hash_var.results  | length) > 0 and (jboss_eap_running_paths | length) > 0'
   with_items: "{{ name_hash_var.results }}"
 
 - name: Debug super array
@@ -65,12 +52,13 @@
   shell: "grep {{ item.split(',')[1] }} /tmp/dc-{{inventory_hostname}}.txt || echo {{ item }} >> /tmp/dc-{{inventory_hostname}}.txt"
   ignore_errors: yes
   delegate_to: localhost
-  when: 'jboss_eap and domain_controller'
+  when: 'jboss_eap and domain_controller and (jboss_eap_running_paths | length) > 0'
   with_items: "{{ apps_internal }}"
 
 - name: remove apps_internal fact
   set_fact:
     apps_internal: []
+  when: 'jboss_eap and domain_controller'
 
 # - name: Debug all array new
 #   debug:
