@@ -43,11 +43,15 @@
   when: 'jboss_eap and domain_controller'
 
 - name: Loop over SHAs
-  shell: "grep {{ item }} /tmp/dc-{{inventory_hostname}}.txt || echo {{ item }} >> /tmp/dc-{{inventory_hostname}}.txt"
+  shell: "grep {{ item.split(',')[1] }} /tmp/dc-{{inventory_hostname}}.txt || echo {{ item }} >> /tmp/dc-{{inventory_hostname}}.txt"
   ignore_errors: yes
   delegate_to: localhost
   when: 'jboss_eap and domain_controller'
   with_items: "{{ apps_internal }}"
+
+- name: remove apps_internal fact
+  set_fact:
+    apps_internal: []
 
 # - name: Debug all array new
 #   debug:
