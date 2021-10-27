@@ -8,64 +8,64 @@
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep"
   register: internal_jboss_processes
   ignore_errors: yes
-  when: 'jboss_eap'
+  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
 
 - name: set jboss_processes fact
   set_fact:
     jboss_processes: "{{ internal_jboss_processes.stdout | trim }}"
   ignore_errors: yes
-  when: 'jboss_eap'
+  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
 
 - name: check if this machine is the domain controller or host controller
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=host-config=)[^ ]+' | grep -i slave
   register: internal_controller_check
   ignore_errors: yes
-  when: 'jboss_eap'
+  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
 
 - name: set domain controller fact
   set_fact:
-    domain_controller: "{{ internal_controller_check.rc != 0 }}"
+    domain_controller: "{{ internal_controller_check.rc != 0 and (jboss_eap_running_paths | length) > 0 }}"
   ignore_errors: yes
-  when: 'jboss_eap'
+  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
 
 - name: get domain controller host
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=master.address=|master-address=)[^ ]+' | uniq
   register: internal_domain_controller_host
   ignore_errors: yes
-  when: 'jboss_eap'
+  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
 
 - name: set domain controller host fact
   set_fact:
     domain_controller_host: "{{ internal_domain_controller_host.stdout | trim }}"
   ignore_errors: yes
-  when: 'jboss_eap'
+  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
 
 - name: set host controller fact
   set_fact:
     host_controller: "{{ internal_controller_check.rc == 0 }}"
   ignore_errors: yes
-  when: 'jboss_eap'
+  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
 
 - name: standalone check
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "\-D\[Standalone\]"
   register: internal_standalone_check
   ignore_errors: yes
-  when: 'jboss_eap'
+  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
 
 - name: set standalone check fact
   set_fact:
     standalone: "{{ internal_standalone_check.rc == 0 }}"
   ignore_errors: yes
-  when: 'jboss_eap'
+  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
 
 - name: Gather number of EAP instances
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "\-D\[Server:" | wc -l
   register: internal_eap_number_instances
   ignore_errors: yes
-  when: 'jboss_eap'
+  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
 
 - name: set number of EAP instances fact
   set_fact:
     eap_number_instances: "{{ internal_eap_number_instances.stdout | trim }}"
   ignore_errors: yes
-  when: 'jboss_eap'
+  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'

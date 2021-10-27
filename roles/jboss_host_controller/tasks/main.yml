@@ -6,25 +6,25 @@
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=jboss.domain.base.dir=)[^ ]+'
   register: jboss_domain_base_dir_internal
   ignore_errors: yes
-  when: 'jboss_eap and host_controller'
+  when: 'jboss_eap and host_controller and (jboss_eap_running_paths | length) > 0'
 
 - name: get jboss.home.dir path
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=jboss.home.dir=)[^ ]+'
   register: jboss_home_dir_internal
   ignore_errors: yes
-  when: 'jboss_eap and host_controller and jboss_domain_base_dir_internal.rc != 0'
+  when: 'jboss_eap and host_controller and jboss_domain_base_dir_internal.rc != 0 and (jboss_eap_running_paths | length) > 0'
 
 - name: List all SHAs from host controller using jboss_domain_base_dir
   shell: "cd {{ jboss_domain_base_dir_internal.stdout | trim }}/domain/data/content && find . -mindepth 2 -type d | tr -d './'"
   register: jboss_host_controller_sha1
   ignore_errors: yes
-  when: 'jboss_eap and host_controller and jboss_domain_base_dir_internal.rc == 0'
+  when: 'jboss_eap and host_controller and jboss_domain_base_dir_internal.rc == 0 and (jboss_eap_running_paths | length) > 0'
 
 - name: List all SHAs from host controller using jboss.home.dir
   shell: "cd {{ jboss_home_dir_internal.stdout | trim }}/domain/data/content && find . -mindepth 2 -type d | tr -d './'"
   register: jboss_host_controller_sha1
   ignore_errors: yes
-  when: 'jboss_eap and host_controller and jboss_domain_base_dir_internal.rc != 0'
+  when: 'jboss_eap and host_controller and jboss_domain_base_dir_internal.rc != 0 and (jboss_eap_running_paths | length) > 0'
 
 - name: Find dc-* files
   delegate_to: localhost
@@ -40,7 +40,7 @@
   ignore_errors: yes
   delegate_to: localhost
   register: application_found
-  when: 'jboss_eap and host_controller and search_dc.matched > 0'
+  when: 'jboss_eap and host_controller and search_dc.matched > 0 and (jboss_eap_running_paths | length) > 0'
   with_items: "{{ jboss_host_controller_sha1.stdout_lines }}"
 
 - name: Create empty fact for application 
@@ -51,5 +51,5 @@
   set_fact:
     applications: "{{ applications + [ item.stdout ] }}"
   ignore_errors: yes
-  when: 'jboss_eap and host_controller and search_dc.matched > 0'
+  when: 'jboss_eap and host_controller and search_dc.matched > 0 and (jboss_eap_running_paths | length) > 0'
   with_items: "{{ application_found.results }}"
