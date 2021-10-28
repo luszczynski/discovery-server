@@ -1,10 +1,10 @@
 - name: internal_host_started_processing_role
   set_fact:
     internal_host_started_processing_role: "jboss_domain_controller"
+    domain_files: []
 
 - name: Find all domain.xml using eap_home_candidates
   find:
-  #  paths: ["{{ item }}"]
    paths: "{{ eap_home_candidates }}"
    patterns: 'domain.xml'
    recurse: yes
@@ -13,224 +13,62 @@
   ignore_errors: yes
   register: jboss_domain_xml_files_list
   when: 'jboss_eap and domain_controller'
-  # with_items: "{{ eap_home_candidates }}"
 
 - name: Debug domain.xml list file
   debug:
-    msg: "var = {{ jboss_domain_xml_files_list.results }}"
+    msg: "var = {{ jboss_domain_xml_files_list }}"
   when: 'jboss_eap and domain_controller'
+  ignore_errors: yes
+
+- name: Build domain file list
+  set_fact:
+    domain_files: "{{ domain_files + [ item.path ] }}"
+  with_items: "{{ jboss_domain_xml_files_list.files }}"
+  ignore_errors: yes
+  when: jboss_eap and domain_controller and jboss_domain_xml_files_list.matched > 0
 
 - name: Obtem Hashes com base no domain.xml
-  shell: "cat {{ item.files[0].path }} | grep sha1 | grep -o '\".\"' | tr -d '\"' | while read -r hash; do cat {{ item.files[0].path }} | grep $hash -B3 | grep -o 'deployment name=\".\" ' | grep -o '\".*\"' | tr -d '\"' | tr -d '\\\n' ; echo \",$hash\"; done"
+  shell: "cat {{ item.path }} | grep sha1 | grep -o '\".*\"' | tr -d '\"' | while read -r hash; do cat {{ item.path }} | grep $hash -B3 | grep -o 'deployment name=\".*\" ' | grep -o '\".*\"' | tr -d '\"' | tr -d '\\\n' ; echo \",$hash\"; done"
   register: name_hash_var
   ignore_errors: yes
-  when: 'jboss_eap and domain_controller and item.matched > 0'
-  with_items: "{{ jboss_domain_xml_files_list.results }}"
+  when: 'jboss_eap and domain_controller'
+  with_items: "{{ domain_files }}"
 
 - name: Debug name_hash_var
   debug:
     msg: "var = {{ name_hash_var.results }}"
   when: 'jboss_eap and domain_controller'
+  ignore_errors: yes
 
 - name: Create empty fact for applications
   set_fact:
     apps_internal: []
   when: 'jboss_eap and domain_controller'
+  ignore_errors: yes
 
 - name: Generate array from string
   set_fact:
     apps_internal: "{{ apps_internal + item.stdout_lines }}"
   ignore_errors: yes
-  when: 'jboss_eap and domain_controller and (name_hash_var.results  | length) > 0 and (jboss_eap_running_paths | length) > 0'
+  when: 'jboss_eap and domain_controller and (name_hash_var.results  | length) > 0'
   with_items: "{{ name_hash_var.results }}"
 
 - name: Debug super array
   debug:
     msg: "var = {{ apps_internal }}"
   when: 'jboss_eap and domain_controller'
+  ignore_errors: yes
 
 - name: Loop over SHAs
   shell: "grep {{ item.split(',')[1] }} /tmp/dc-{{inventory_hostname}}.txt || echo {{ item }} >> /tmp/dc-{{inventory_hostname}}.txt"
   ignore_errors: yes
   delegate_to: localhost
-  when: 'jboss_eap and domain_controller and (jboss_eap_running_paths | length) > 0'
+  when: 'jboss_eap and domain_controller'
   with_items: "{{ apps_internal }}"
 
-- name: remove apps_internal fact
+- name: remove facts
   set_fact:
     apps_internal: []
+    domain_files: []
   when: 'jboss_eap and domain_controller'
-
-# - name: Debug all array new
-#   debug:
-#     msg: "var = {{ all_app_name_hash_array.results }}"
-#   when: 'jboss_eap and domain_controller'
-
-# - name: Generate array from another array
-#   shell: "echo {{ ( item.stdout | replace('[','') | replace(']','') ).split(';') }}"
-#   register: all_app_name_hash_final
-#   ignore_errors: yes
-#   when: 'jboss_eap and domain_controller'
-#   with_items: "{{ all_app_name_hash_array.results }}"
-
-# - name: Debug final array
-#   debug:
-#     msg: "var = {{ all_app_name_hash_final.results }}"
-#   when: 'jboss_eap and domain_controller'
-
-# - name: Loop over SHAs
-#   shell: "grep {{ item.stdout.split(',')[1] }} /tmp/dc-{{inventory_hostname}}.txt || echo {{ item.stdout.split(',')[0] }},{{ item.stdout.split(',')[1] }} >> /tmp/dc-{{inventory_hostname}}.txt"
-#   ignore_errors: yes
-#   delegate_to: localhost
-#   when: 'jboss_eap and domain_controller'
-#   with_items: "{{ all_app_name_hash_array.results }}"
-
-# - name: get all jboss domain deployment using eap_home_candidates
-#   shell:
-#     cmd: |
-
-#       DOMAIN_FULL_PATH="{{ item.stdout }}"
-
-#       if [ -f "$DOMAIN_FULL_PATH" ]; then
-#         QTD_DEPLOYS=`cat $DOMAIN_FULL_PATH | sed 's/xmlns=/ns=/g' | xmllint --xpath 'count(/domain/deployments/deployment)' -`
-
-#         for (( d=1; d<=$QTD_DEPLOYS; d++))
-#         do
-#           echo "{"
-
-#           echo "\"name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@name)" -)\",";
-
-#           echo "\"runtime-name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@runtime-name)" -)\",";
-
-#           echo "\"sha1\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/content/@sha1)" -)\"";
-
-#           echo "}"
-
-#           echo ","
-#         done
-#       else
-#           exit 1
-#       fi
-
-#   register: jboss_domain_deployment_json
-#   ignore_errors: yes
-#   when: 'jboss_eap and domain_controller'
-#   with_items: "{{ jboss_domain_xml_files_list.results }}"
-
-# - name: Remove last comma
-#   set_fact:
-#     jboss_domain_deployment_json: "{{ jboss_domain_deployment_json | regex_replace('.$','') }}"
-#   ignore_errors: yes
-#   when: 'jboss_eap and domain_controller'
-
-# - name: "Append []"
-#   set_fact:
-#     jboss_domain_deployment_json: "{{ '[' + jboss_domain_deployment_json + ']' }}"
-#   ignore_errors: yes
-#   when: 'jboss_eap and domain_controller'
-
-# - name: Loop over SHAs
-#   shell: "grep {{ item.sha1 }} /tmp/dc-{{inventory_hostname}}.txt || echo {{ item.name }},{{ item.sha1 }} >> /tmp/dc-{{inventory_hostname}}.txt"
-#   ignore_errors: yes
-#   delegate_to: localhost
-#   when: 'jboss_eap and domain_controller'
-#   with_items: "{{ (jboss_domain_deployment_json | trim | from_json) }}"
-
-# - name: Loop over SHAs
-#   shell: "grep {{ item.sha1 }} /tmp/dc-{{inventory_hostname}}.txt || echo {{ item.name }},{{ item.sha1 }} >> /tmp/dc-{{inventory_hostname}}.txt"
-#   ignore_errors: yes
-#   delegate_to: localhost
-#   when: 'jboss_eap and domain_controller'
-#   with_items: "{{ jboss_domain_deployment_json }}"
-
-# - name: Debug jboss_domain_deployment_json
-#   debug:
-#     msg: "var jboss_domain_deployment_json = {{ jboss_domain_deployment_json | trim }}"
-
-# - name: Copy lista-deploy.sh to tmp
-#   copy:
-#     src: lista-deploy.sh
-#     dest: /tmp/lista-deploy.sh
-#     mode: 0755
-#   ignore_errors: yes
-#   when: 'jboss_eap and domain_controller'
-
-# {{ jboss_eap_running_paths }}
-
-# {{ eap_home_candidates }}
-
-# - name: get jboss.domain.base.dir path
-#   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=jboss.domain.base.dir=)[^ ]+'
-#   register: jboss_domain_base_dir_internal
-#   ignore_errors: yes
-#   when: 'jboss_eap and domain_controller'
-
-# - name: get jboss.home.dir path
-#   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=jboss.home.dir=)[^ ]+'
-#   register: jboss_home_dir_internal
-#   ignore_errors: yes
-#   when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc != 0'
-
-# - name: get all jboss domain deployment using jboss_domain_base_dir_internal
-#   shell:
-#     cmd: |
-
-#       DOMAIN_FULL_PATH="{{ jboss_domain_base_dir_internal.stdout | trim }}/configuration/domain.xml"
-
-#       QTD_DEPLOYS=`cat $DOMAIN_FULL_PATH | sed 's/xmlns=/ns=/g' | xmllint --xpath 'count(/domain/deployments/deployment)' -`
-
-#       echo "["
-#       for (( d=1; d<=$QTD_DEPLOYS; d++))
-#       do
-#         echo "{"
-
-#         echo "\"name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@name)" -)\",";
-
-#         echo "\"runtime-name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@runtime-name)" -)\",";
-
-#         echo "\"sha1\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/content/@sha1)" -)\"";
-
-#         echo "}"
-#         if [[ $QTD_DEPLOYS > 1 && $d != $QTD_DEPLOYS ]]; then
-#             echo ","
-#         fi
-#       done
-#       echo "]"
-#   register: jboss_domain_deployment_json
-#   ignore_errors: yes
-#   when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc == 0'
-
-# - name: get all jboss domain deployment using jboss.home.dir
-#   shell:
-#     cmd: |
-
-#       DOMAIN_FULL_PATH="{{ jboss_home_dir_internal.stdout | trim }}/domain/configuration/domain.xml"
-
-#       QTD_DEPLOYS=`cat $DOMAIN_FULL_PATH | sed 's/xmlns=/ns=/g' | xmllint --xpath 'count(/domain/deployments/deployment)' -`
-
-#       echo "["
-#       for (( d=1; d<=$QTD_DEPLOYS; d++))
-#       do
-#         echo "{"
-
-#         echo "\"name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@name)" -)\",";
-
-#         echo "\"runtime-name\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/@runtime-name)" -)\",";
-
-#         echo "\"sha1\": \"$(cat $DOMAIN_FULL_PATH | sed "s/xmlns=/ns=/g" | xmllint --xpath "string(/domain/deployments/deployment[position()=$d]/content/@sha1)" -)\"";
-
-#         echo "}"
-#         if [[ $QTD_DEPLOYS > 1 && $d != $QTD_DEPLOYS ]]; then
-#             echo ","
-#         fi
-#       done
-#       echo "]"
-#   register: jboss_domain_deployment_json
-#   ignore_errors: yes
-#   when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc != 0'
-
-# - name: get all jboss domain deployment using jboss.home.dir
-#   shell: "/tmp/lista-deploy.sh {{ jboss_home_dir_internal.stdout | trim }}/domain/configuration/domain.xml"
-#   register: jboss_domain_deployment_json
-#   ignore_errors: yes
-#   when: 'jboss_eap and domain_controller and jboss_domain_base_dir_internal.rc != 0'
+  ignore_errors: yes
