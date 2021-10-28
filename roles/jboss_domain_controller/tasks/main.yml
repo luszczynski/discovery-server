@@ -4,7 +4,8 @@
 
 - name: Find all domain.xml using eap_home_candidates
   find:
-   paths: ["{{ item }}"]
+  #  paths: ["{{ item }}"]
+   paths: "{{ eap_home_candidates }}"
    patterns: 'domain.xml'
    recurse: yes
    file_type: file
@@ -12,7 +13,7 @@
   ignore_errors: yes
   register: jboss_domain_xml_files_list
   when: 'jboss_eap and domain_controller'
-  with_items: "{{ eap_home_candidates }}"
+  # with_items: "{{ eap_home_candidates }}"
 
 - name: Debug domain.xml list file
   debug:
