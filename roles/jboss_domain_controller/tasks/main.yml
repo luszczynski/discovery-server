@@ -28,7 +28,7 @@
   when: jboss_eap and domain_controller and jboss_domain_xml_files_list.matched > 0
 
 - name: Obtem Hashes com base no domain.xml
-  shell: "cat {{ item.path }} | grep sha1 | grep -o '\".*\"' | tr -d '\"' | while read -r hash; do cat {{ item.path }} | grep $hash -B3 | grep -o 'deployment name=\".*\" ' | grep -o '\".*\"' | tr -d '\"' | tr -d '\\\n' ; echo \",$hash\"; done"
+  shell: "cat {{ item }} | grep sha1 | grep -o '\".*\"' | tr -d '\"' | while read -r hash; do cat {{ item }} | grep $hash -B3 | grep -o 'deployment name=\".*\" ' | grep -o '\".*\"' | tr -d '\"' | tr -d '\\\n' ; echo \",$hash\"; done"
   register: name_hash_var
   ignore_errors: yes
   when: 'jboss_eap and domain_controller'
