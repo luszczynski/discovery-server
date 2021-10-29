@@ -45,12 +45,12 @@
     hashes: "{{ hashes + [ item.stdout ] }}"
   ignore_errors: yes
   when: 'jboss_eap and host_controller and item.stdout != ""'
-  with_items: "{{ all_shas_tmp }}"
+  with_items: "{{ all_shas_tmp.results }}"
   # with_items: "{{ content_files_list.files | map() | list }}"
 
 - name: Debug hashes
   debug:
-    msg: "var = {{ hashes }}"
+    msg: "var = {{ hashes | unique | list }}"
   when: 'jboss_eap and host_controller'
   ignore_errors: yes
 
@@ -71,7 +71,7 @@
   delegate_to: localhost
   register: application_found
   when: 'jboss_eap and host_controller and search_dc.matched > 0'
-  with_items: "{{ hashes }}"
+  with_items: "{{ hashes | unique | list }}"
     
 - name: Increment facts for application found
   set_fact:
