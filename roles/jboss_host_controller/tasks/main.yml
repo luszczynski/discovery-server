@@ -63,7 +63,7 @@
 
 - name: Set fact with applications matched
   set_fact:
-    applications: "{{ applications + hostvars['localhost']['apps'][item]['app'] }}"
+    applications: "{{ applications + [ hostvars['localhost']['apps'][item]['app'] ] }}"
   ignore_errors: yes
   when: 'jboss_eap and host_controller and hostvars["localhost"]["apps"][item]'
   with_items: "{{ hashes }}"

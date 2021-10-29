@@ -18,6 +18,7 @@
     delimiter: ','
     key: hash
   register: apps_tmp
+  ignore_errors: yes
   with_items: "{{ search_dc_tmp.files }}"
   when: 'search_dc_tmp.matched > 0 and item.path != ""'
 
@@ -25,3 +26,4 @@
   set_fact:
     apps: "{{ apps | combine(item.dict) }}"
   with_items: "{{ apps_tmp.results }}"
+  ignore_errors: yes
