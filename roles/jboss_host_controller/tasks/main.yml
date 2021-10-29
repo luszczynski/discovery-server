@@ -65,7 +65,7 @@
   set_fact:
     applications: "{{ applications + [ hostvars['localhost']['apps'][item]['app'] ] }}"
   ignore_errors: yes
-  when: 'jboss_eap and host_controller and hostvars["localhost"]["apps"][item]'
+  when: 'jboss_eap and host_controller and (hostvars["localhost"]["apps"] | length) > 0 and hostvars["localhost"]["apps"][item]'
   with_items: "{{ hashes }}"
 
 #  - name: Salva alguma coisa no /tmp se hash existe

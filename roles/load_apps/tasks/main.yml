@@ -27,3 +27,4 @@
     apps: "{{ apps | combine(item.dict) }}"
   with_items: "{{ apps_tmp.results }}"
   ignore_errors: yes
+  when: 'search_dc_tmp.matched > 0'
