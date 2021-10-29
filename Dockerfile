@@ -7,8 +7,8 @@ COPY ./roles/jboss_host_controller/ /usr/lib/python3.6/site-packages/discovery-s
 COPY ./roles/jvm/ /usr/lib/python3.6/site-packages/discovery-server/scanner/network/runner/roles/jvm
 COPY ./roles/memory/ /usr/lib/python3.6/site-packages/discovery-server/scanner/network/runner/roles/memory
 COPY ./roles/rhsso/ /usr/lib/python3.6/site-packages/discovery-server/scanner/network/runner/roles/rhsso
-
-RUN sed -i '/^    - system_purpose.*/i \    - jboss_info\n    - jboss_domain_controller\n    - jboss_host_controller\n    - jvm\n    - memory\n    - rhsso' /usr/lib/python3.6/site-packages/discovery-server/scanner/network/runner/inspect.yml
+COPY ./roles/load_apps/ /usr/lib/python3.6/site-packages/discovery-server/scanner/network/runner/roles/load_apps
+COPY ./inspect.yml /usr/lib/python3.6/site-packages/discovery-server/scanner/network/runner/inspect.yml
 
 EXPOSE 443
 

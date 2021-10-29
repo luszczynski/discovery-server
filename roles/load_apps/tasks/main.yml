@@ -1,0 +1,27 @@
+- name: internal_host_started_processing_role
+  set_fact:
+    internal_host_started_processing_role: "load_apps"
+    apps: []
+
+- name: Find dc-*.txt files
+  ignore_errors: yes
+  find:
+    paths: ["/tmp"]
+    patterns: 'dc-*.txt'
+    file_type: file
+  register: search_dc_tmp
+
+- name: Read apps from dc-*.txt files
+  read_csv:
+    path: "{{ item.path }}"
+    fieldnames: app,hash
+    delimiter: ','
+    key: hash
+  register: apps_tmp
+  with_items: "{{ search_dc_tmp.files }}"
+  when: 'search_dc_tmp.matched > 0 and item.path != ""'
+
+- name: Set fact apps
+  set_fact:
+    apps: "{{ apps | combine(item.dict) }}"
+  with_items: "{{ apps_tmp.results }}"

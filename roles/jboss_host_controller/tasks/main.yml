@@ -21,7 +21,7 @@
 
 - name: Debug content_files_list
   debug:
-    msg: "var = {{ content_files_list.files | map(attribute='path') | select('match', '.*/servers/.*') | unique | list }}"
+    msg: "var = {{ content_files_list.files }}"
   when: 'jboss_eap and host_controller'
   ignore_errors: yes
 
@@ -31,13 +31,6 @@
   ignore_errors: yes
   when: 'jboss_eap and host_controller'
   with_items: "{{ content_files_list.files | map(attribute='path') | select('match', '.*/servers/.*') | unique | list }}"
-
-# - name: List all SHAs from host controller
-#   shell: "echo {{ item.split('/')[-3] + item.split('/')[-2] }}"
-#   register: all_shas_tmp
-#   ignore_errors: yes
-#   when: 'jboss_eap and host_controller'
-#   with_items: "{{ content_files_list.files | map(attribute='path') | select('match', '.*/servers/.*') | unique | list }}"
 
 - name: Debug hashes_tmp
   debug:
@@ -55,33 +48,45 @@
 
 - name: Debug hashes
   debug:
-    msg: "var = {{ hashes | unique | list }}"
+    msg: "var = {{ hashes }}"
   when: 'jboss_eap and host_controller'
   ignore_errors: yes
 
-- name: Find dc-* files
-  delegate_to: localhost
-  ignore_errors: yes
-  find:
-    paths: ["/tmp"]
-    patterns: 'dc-*.txt'
-    file_type: file
-  register: search_dc
+# - name: Find dc-* files
+#   delegate_to: localhost
+#   ignore_errors: yes
+#   find:
+#     paths: ["/tmp"]
+#     patterns: 'dc-*.txt'
+#     file_type: file
+#   register: search_dc
 
-- name: Search application
-  shell: "grep {{ item }} /tmp/dc-*.txt | cut -d, -f1 | uniq"
-  ignore_errors: yes
-  delegate_to: localhost
-  register: application_found
-  when: 'jboss_eap and host_controller and search_dc.matched > 0'
-  with_items: "{{ hashes }}"
-    
-- name: Increment facts for application found
+- name: Set fact with applications matched
   set_fact:
-    applications: "{{ applications + [ item.stdout ] }}"
+    applications: "{{ applications + hostvars['localhost']['apps'][item]['app'] }}"
   ignore_errors: yes
-  when: 'jboss_eap and host_controller and search_dc.matched > 0 and item.stdout != ""'
-  with_items: "{{ application_found.results }}"
+  when: 'jboss_eap and host_controller and hostvars["localhost"]["apps"][item]'
+  with_items: "{{ hashes }}"
+
+#  - name: Salva alguma coisa no /tmp se hash existe
+#     shell: "echo existe > /tmp/{{ hostvars['localhost']['apps'][item]['app'] }}"
+#     with_items: "{{ hashes }}"
+#     when: "{{ hostvars['localhost']['apps'][item] }}"
+
+# - name: Search application
+#   shell: "grep {{ item }} /tmp/dc-*.txt | cut -d, -f1 | uniq"
+#   ignore_errors: yes
+#   delegate_to: localhost
+#   register: application_found
+#   when: 'jboss_eap and host_controller and search_dc.matched > 0'
+#   with_items: "{{ hashes }}"
+    
+# - name: Increment facts for application found
+#   set_fact:
+#     applications: "{{ applications + [ item.stdout ] }}"
+#   ignore_errors: yes
+#   when: 'jboss_eap and host_controller and search_dc.matched > 0 and item.stdout != ""'
+#   with_items: "{{ application_found.results }}"
 
 - name: remove facts
   set_fact:
