@@ -2,6 +2,7 @@
   set_fact:
     internal_host_started_processing_role: "jboss_domain_controller"
     domain_files: []
+    apps_internal: []
 
 - name: Find all domain.xml using eap_home_candidates
   find:
@@ -25,7 +26,7 @@
     domain_files: "{{ domain_files + [ item.path ] }}"
   with_items: "{{ jboss_domain_xml_files_list.files }}"
   ignore_errors: yes
-  when: jboss_eap and domain_controller and jboss_domain_xml_files_list.matched > 0
+  when: jboss_eap and domain_controller and jboss_domain_xml_files_list.matched > 0 and item.path != ""
 
 - name: Obtem Hashes com base no domain.xml
   shell: "cat {{ item }} | grep sha1 | grep -o '\".*\"' | tr -d '\"' | while read -r hash; do cat {{ item }} | grep $hash -B3 | grep -o 'deployment name=\".*\" ' | grep -o '\".*\"' | tr -d '\"' | tr -d '\\\n' ; echo \",$hash\"; done"
@@ -37,12 +38,6 @@
 - name: Debug name_hash_var
   debug:
     msg: "var = {{ name_hash_var.results }}"
-  when: 'jboss_eap and domain_controller'
-  ignore_errors: yes
-
-- name: Create empty fact for applications
-  set_fact:
-    apps_internal: []
   when: 'jboss_eap and domain_controller'
   ignore_errors: yes
 
@@ -60,7 +55,7 @@
   ignore_errors: yes
 
 - name: Loop over SHAs
-  shell: "grep {{ item.split(',')[0] }} /tmp/dc-{{inventory_hostname}}.txt || echo {{ item }} >> /tmp/dc-{{inventory_hostname}}.txt"
+  shell: "grep {{ item.split(',')[1] }} /tmp/dc-{{inventory_hostname}}.txt || echo {{ item }} >> /tmp/dc-{{inventory_hostname}}.txt"
   ignore_errors: yes
   delegate_to: localhost
   when: 'jboss_eap and domain_controller'

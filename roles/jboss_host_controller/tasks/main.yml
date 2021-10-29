@@ -25,7 +25,7 @@
   ignore_errors: yes
 
 - name: List all SHAs from host controller
-  shell: "echo {{ item.path.split('/')[-3] + item.path.split('/')[-2] }}"
+  shell: "echo {{ item.split('/')[-3] + item.split('/')[-2] }}"
   register: all_shas_tmp
   ignore_errors: yes
   when: 'jboss_eap and host_controller'
@@ -45,7 +45,7 @@
     hashes: "{{ hashes + [ item.stdout ] }}"
   ignore_errors: yes
   when: 'jboss_eap and host_controller and item.stdout != ""'
-  with_items: "{{ all_shas_tmp.results }}"
+  with_items: "{{ all_shas_tmp }}"
   # with_items: "{{ content_files_list.files | map() | list }}"
 
 - name: Debug hashes
