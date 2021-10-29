@@ -20,7 +20,7 @@
 
 - name: Debug content_files_list
   debug:
-    msg: "var = {{ content_files_list.files | map(attribute='path') | select('match', '.*/data/servers/.*') | unique | list }}"
+    msg: "var = {{ content_files_list.files | map(attribute='path') | select('match', '.*/servers/.*') | unique | list }}"
   when: 'jboss_eap and host_controller'
   ignore_errors: yes
 
@@ -30,7 +30,7 @@
   ignore_errors: yes
   when: 'jboss_eap and host_controller'
   # with_items: "{{ content_files_list.files }}"
-  with_items: "{{ content_files_list.files | map(attribute='path') | select('match', '.*/data/servers/.*') | unique | list }}"
+  with_items: "{{ content_files_list.files | map(attribute='path') | select('match', '.*/servers/.*') | unique | list }}"
 
 # {{ files | map(attribute='path') |  select('match', '.*/opt/teste.*') | list }}
 
