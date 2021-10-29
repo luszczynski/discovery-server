@@ -3,8 +3,9 @@
     internal_host_started_processing_role: "jboss_host_controller"
     applications: []
     hashes: []
+    hashes_tmp: []
 
-# Evitar path dos servers ('/opt/jboss/jboss-eap/hc/data/servers/sicve-internet-prd-node01-lx671/content/89/5e6dd810ba6c4ae83be2c5bce744bfed43ef7b/content')
+# Evitar path dos servers ('/opt/jboss/jboss-eap/hc/data/servers/my-server/content/89/5e6dd810ba6c4ae83be2c5bce744bfed43ef7b/content')
 # /opt/jboss-eap-7.0/domain/data/content/3b/09a90d049153284fa2b16461f7b793c632b4c3/content
 
 - name: Find all content using eap_home_candidates
@@ -24,28 +25,32 @@
   when: 'jboss_eap and host_controller'
   ignore_errors: yes
 
-- name: List all SHAs from host controller
-  shell: "echo {{ item.split('/')[-3] + item.split('/')[-2] }}"
-  register: all_shas_tmp
+- name: Set fact with all hashes
+  set_fact:
+    hashes_tmp: "{{ hashes_tmp + [ item.split('/')[-3] + item.split('/')[-2] ] }}"
   ignore_errors: yes
   when: 'jboss_eap and host_controller'
-  # with_items: "{{ content_files_list.files }}"
   with_items: "{{ content_files_list.files | map(attribute='path') | select('match', '.*/servers/.*') | unique | list }}"
 
-# {{ files | map(attribute='path') |  select('match', '.*/opt/teste.*') | list }}
+# - name: List all SHAs from host controller
+#   shell: "echo {{ item.split('/')[-3] + item.split('/')[-2] }}"
+#   register: all_shas_tmp
+#   ignore_errors: yes
+#   when: 'jboss_eap and host_controller'
+#   with_items: "{{ content_files_list.files | map(attribute='path') | select('match', '.*/servers/.*') | unique | list }}"
 
-- name: Debug all_shas_tmp
+- name: Debug hashes_tmp
   debug:
-    msg: "var = {{ all_shas_tmp }}"
+    msg: "var = {{ hashes_tmp }}"
   when: 'jboss_eap and host_controller'
   ignore_errors: yes
 
 - name: Increment facts for hashes found
   set_fact:
-    hashes: "{{ hashes + [ item.stdout ] }}"
+    hashes: "{{ hashes + [ item ] }}"
   ignore_errors: yes
-  when: 'jboss_eap and host_controller and item.stdout != ""'
-  with_items: "{{ all_shas_tmp.results }}"
+  when: 'jboss_eap and host_controller and item != ""'
+  with_items: "{{ hashes_tmp | unique | list }}"
   # with_items: "{{ content_files_list.files | map() | list }}"
 
 - name: Debug hashes
@@ -53,8 +58,6 @@
     msg: "var = {{ hashes | unique | list }}"
   when: 'jboss_eap and host_controller'
   ignore_errors: yes
-
-# all_shas_tmp.stdout_lines
 
 - name: Find dc-* files
   delegate_to: localhost
@@ -71,7 +74,7 @@
   delegate_to: localhost
   register: application_found
   when: 'jboss_eap and host_controller and search_dc.matched > 0'
-  with_items: "{{ hashes | unique | list }}"
+  with_items: "{{ hashes }}"
     
 - name: Increment facts for application found
   set_fact:
@@ -83,30 +86,6 @@
 - name: remove facts
   set_fact:
     hashes: []
+    hashes_tmp: []
   when: 'jboss_eap and host_controller'
   ignore_errors: yes
-
-# - name: get jboss.domain.base.dir path
-#   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=jboss.domain.base.dir=)[^ ]+'
-#   register: jboss_domain_base_dir_internal
-#   ignore_errors: yes
-#   when: 'jboss_eap and host_controller and (jboss_eap_running_paths | length) > 0'
-
-# - name: get jboss.home.dir path
-#   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=jboss.home.dir=)[^ ]+'
-#   register: jboss_home_dir_internal
-#   ignore_errors: yes
-#   when: 'jboss_eap and host_controller and jboss_domain_base_dir_internal.rc != 0 and (jboss_eap_running_paths | length) > 0'
-
-# - name: List all SHAs from host controller using jboss_domain_base_dir
-#   shell: "cd {{ jboss_domain_base_dir_internal.stdout | trim }}/domain/data/content && find . -mindepth 2 -type d | tr -d './'"
-#   register: jboss_host_controller_sha1
-#   ignore_errors: yes
-#   when: 'jboss_eap and host_controller and jboss_domain_base_dir_internal.rc == 0 and (jboss_eap_running_paths | length) > 0'
-
-# - name: List all SHAs from host controller using jboss.home.dir
-#   shell: "cd {{ jboss_home_dir_internal.stdout | trim }}/domain/data/content && find . -mindepth 2 -type d | tr -d './'"
-#   register: jboss_host_controller_sha1
-#   ignore_errors: yes
-#   when: 'jboss_eap and host_controller and jboss_domain_base_dir_internal.rc != 0 and (jboss_eap_running_paths | length) > 0'
-
