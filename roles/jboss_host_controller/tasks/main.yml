@@ -30,7 +30,7 @@
     hashes_tmp: "{{ hashes_tmp + [ item.split('/')[-3] + item.split('/')[-2] ] }}"
   ignore_errors: yes
   when: 'jboss_eap and host_controller'
-  with_items: "{{ content_files_list.files | map(attribute='path') | select('match', '.*/servers/.*') | unique | list }}"
+  with_items: "{{ content_files_list.files | map(attribute='path') | select('match', '.*servers.*/content/.*content') | unique | list }}"
 
 - name: Debug hashes_tmp
   debug:
