@@ -3,69 +3,122 @@
 - name: internal_host_started_processing_role
   set_fact:
     internal_host_started_processing_role: "jboss_info"
+    jboss_is_running: "{{ (jboss_eap_running_paths | length) > 0 }}"
 
 - name: gather jboss.processes
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep"
   register: internal_jboss_processes
   ignore_errors: yes
-  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
+  when: 'jboss_eap and jboss_is_running'
 
 - name: set jboss_processes fact
   set_fact:
     jboss_processes: "{{ internal_jboss_processes.stdout | trim }}"
   ignore_errors: yes
-  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
-
-- name: check if this machine is the domain controller or host controller
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=host-config=)[^ ]+' | grep -i slave
-  register: internal_controller_check
-  ignore_errors: yes
-  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
-
-- name: set domain controller fact
-  set_fact:
-    domain_controller: "{{ internal_controller_check.rc != 0 and (jboss_eap_running_paths | length) > 0 }}"
-  ignore_errors: yes
-  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
-
-- name: get domain controller host
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=master.address=|master-address=)[^ ]+' | uniq
-  register: internal_domain_controller_host
-  ignore_errors: yes
-  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
-
-- name: set domain controller host fact
-  set_fact:
-    domain_controller_host: "{{ internal_domain_controller_host.stdout | trim }}"
-  ignore_errors: yes
-  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
-
-- name: set host controller fact
-  set_fact:
-    host_controller: "{{ internal_controller_check.rc == 0 }}"
-  ignore_errors: yes
-  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
+  when: 'jboss_eap and jboss_is_running'
 
 - name: standalone check
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "\-D\[Standalone\]"
   register: internal_standalone_check
   ignore_errors: yes
-  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
+  when: 'jboss_eap and jboss_is_running'
 
 - name: set standalone check fact
   set_fact:
     standalone: "{{ internal_standalone_check.rc == 0 }}"
   ignore_errors: yes
-  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
+  when: 'jboss_eap and jboss_is_running'
+
+- name: set jboss domain controller initial score
+  set_fact:
+    jboss_domain_controller_score: 0
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_is_running'
+
+- name: check if this machine is the domain controller using ps
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=host-config=)[^ ]+' | grep -i slave
+  register: internal_controller_check_ps
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_is_running'
+
+- name: check if this machine is the domain controller using management port
+  raw: netstat -lnp | grep 9990 | grep java
+  register: internal_controller_check_port
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_is_running'
+
+- name: check if this machine is the domain controller using master-address param
+  raw: ps -auxwww | grep java | grep master-address
+  register: internal_controller_check_param
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_is_running'
+
+- name: check if this machine is the domain controller using port connection
+  raw: netstat -an | grep ESTA | awk {'print $5'} | grep 9999 # se rc der 0, é host controller
+  register: internal_controller_port_connection
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_is_running'
+
+# Computa o score se encontrando o master-address
+- name: Compute jboss domain controller score when internal_controller_check_param
+  set_fact:
+    jboss_domain_controller_score: "{{ jboss_domain_controller_score + 2 }}"
+  ignore_errors: yes
+  when: 'jboss_eap and internal_controller_check_param.rc == 0 and jboss_is_running'
+
+# Computa o score do comando PS
+- name: Compute jboss domain controller score when internal_controller_check_ps
+  set_fact:
+    jboss_domain_controller_score: "{{ jboss_domain_controller_score + 1 }}"
+  ignore_errors: yes
+  when: 'jboss_eap and internal_controller_check_ps.rc == 0 and jboss_is_running'
+
+# Computa o score se encontrando a management port
+- name: Compute jboss domain controller score when internal_controller_check_port
+  set_fact:
+    jboss_domain_controller_score: "{{ jboss_domain_controller_score + 1 }}"
+  ignore_errors: yes
+  when: 'jboss_eap and internal_controller_check_port.rc == 0 and jboss_is_running'
+
+# Computa o score se houver conexão de saída para o domain
+- name: Compute jboss domain controller score when internal_controller_port_connection
+  set_fact:
+    jboss_domain_controller_score: "{{ jboss_domain_controller_score + 1 }}"
+  ignore_errors: yes
+  when: 'jboss_eap and internal_controller_port_connection.rc != 0 and jboss_is_running'
+
+- name: set domain controller fact
+  set_fact:
+    domain_controller: "{{ (jboss_domain_controller_score >= 2) }}"
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_is_running'
+
+- name: get domain controller host
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=master.address=|master-address=)[^ ]+' | uniq
+  register: internal_domain_controller_host
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_is_running'
+
+- name: set domain controller host fact
+  set_fact:
+    domain_controller_host: "{{ internal_domain_controller_host.stdout | trim }}"
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_is_running'
+
+- name: set host controller fact
+  set_fact:
+    host_controller: "{{ (jboss_domain_controller_score < 2 and internal_standalone_check.rc != 0) }}"
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_is_running'
 
 - name: Gather number of EAP instances
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "\-D\[Server:" | wc -l
   register: internal_eap_number_instances
   ignore_errors: yes
-  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
+  when: 'jboss_eap and jboss_is_running'
 
 - name: set number of EAP instances fact
   set_fact:
     eap_number_instances: "{{ internal_eap_number_instances.stdout | trim }}"
   ignore_errors: yes
-  when: 'jboss_eap and (jboss_eap_running_paths | length) > 0'
+  when: 'jboss_eap and jboss_is_running'
