@@ -75,6 +75,7 @@ podman stop my-discovery
 podman rm my-dsc-db
 podman rm my-discovery
 
+# Remember to update the vars environment accordingly to your installation.
 podman run \
     --name my-discovery \
     -p 9443:443 \
@@ -94,6 +95,7 @@ podman run \
     -v /root/discovery/server/volumes/log/:/var/log:z \
     -i my-qpc
 
+# Remember to update the vars environment accordingly to your installation.
 podman run \
     --name my-dsc-db \
     --network=container:my-discovery \
