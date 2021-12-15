@@ -89,7 +89,7 @@
 
 - name: set domain controller fact
   set_fact:
-    domain_controller: "{{ (jboss_domain_controller_score >= 2) }}"
+    domain_controller: "{{ jboss_domain_controller_score >= 2 }}"
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
 
@@ -107,7 +107,7 @@
 
 - name: set host controller fact
   set_fact:
-    host_controller: "{{ (jboss_domain_controller_score < 2 and internal_standalone_check.rc != 0) }}"
+    host_controller: "{{ jboss_domain_controller_score < 2 and internal_standalone_check.rc != 0 }}"
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
 
