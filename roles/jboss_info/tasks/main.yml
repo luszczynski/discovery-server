@@ -42,19 +42,19 @@
   when: 'jboss_eap and jboss_is_running'
 
 - name: check if this machine is the domain controller using management port
-  raw: netstat -lnp | grep 9990 | grep java
+  raw: netstat -lnp | grep 9990 | grep java | grep -v grep
   register: internal_controller_check_port # if internal_controller_check_port.rc == 0 then it is domain controller
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
 
 - name: check if this machine is the host controller using master-address param
-  raw: ps -auxwww | grep java | grep master-address
+  raw: ps -auxwww | grep java | grep master-address | grep -v grep
   register: internal_controller_check_param # if internal_controller_check_param.rc == 0 then it is host controller
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
 
 - name: check if this machine is the host controller using port connection
-  raw: netstat -an | grep ESTA | awk {'print $5'} | grep 9999
+  raw: netstat -an | grep ESTA | awk {'print $5'} | grep 9999 | grep -v grep
   register: internal_controller_port_connection # if internal_controller_port_connection.rc == 0 then it is host controller
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
@@ -85,7 +85,7 @@
   set_fact:
     jboss_host_controller_score: "{{ (jboss_host_controller_score | int) + 1 }}"
   ignore_errors: yes
-  when: 'jboss_eap and internal_controller_port_connection.rc != 0 and jboss_is_running'
+  when: 'jboss_eap and internal_controller_port_connection.rc == 0 and jboss_is_running'
 
 - name: set domain controller fact
   set_fact:
