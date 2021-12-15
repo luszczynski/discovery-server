@@ -31,65 +31,65 @@
 
 - name: set jboss domain controller initial score
   set_fact:
-    jboss_domain_controller_score: 0
+    jboss_host_controller_score: 0
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
 
-- name: check if this machine is the domain controller using ps
+- name: check if this machine is the host controller using ps
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=host-config=)[^ ]+' | grep -i slave
-  register: internal_controller_check_ps
+  register: internal_controller_check_ps # if internal_controller_check_ps.rc == 0 then it is host controller
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
 
 - name: check if this machine is the domain controller using management port
   raw: netstat -lnp | grep 9990 | grep java
-  register: internal_controller_check_port
+  register: internal_controller_check_port # if internal_controller_check_port.rc == 0 then it is domain controller
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
 
-- name: check if this machine is the domain controller using master-address param
+- name: check if this machine is the host controller using master-address param
   raw: ps -auxwww | grep java | grep master-address
-  register: internal_controller_check_param
+  register: internal_controller_check_param # if internal_controller_check_param.rc == 0 then it is host controller
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
 
-- name: check if this machine is the domain controller using port connection
-  raw: netstat -an | grep ESTA | awk {'print $5'} | grep 9999 # se rc der 0, é host controller
-  register: internal_controller_port_connection
+- name: check if this machine is the host controller using port connection
+  raw: netstat -an | grep ESTA | awk {'print $5'} | grep 9999
+  register: internal_controller_port_connection # if internal_controller_port_connection.rc == 0 then it is host controller
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
 
 # Computa o score se encontrando o master-address
-- name: Compute jboss domain controller score when internal_controller_check_param
+- name: Compute jboss host controller score when internal_controller_check_param
   set_fact:
-    jboss_domain_controller_score: "{{ jboss_domain_controller_score + 2 }}"
+    jboss_host_controller_score: "{{ (jboss_host_controller_score | int) + 2 }}"
   ignore_errors: yes
   when: 'jboss_eap and internal_controller_check_param.rc == 0 and jboss_is_running'
 
 # Computa o score do comando PS
-- name: Compute jboss domain controller score when internal_controller_check_ps
+- name: Compute jboss host controller score when internal_controller_check_ps
   set_fact:
-    jboss_domain_controller_score: "{{ jboss_domain_controller_score + 1 }}"
+    jboss_host_controller_score: "{{ (jboss_host_controller_score | int) + 1 }}"
   ignore_errors: yes
   when: 'jboss_eap and internal_controller_check_ps.rc == 0 and jboss_is_running'
 
 # Computa o score se encontrando a management port
 - name: Compute jboss domain controller score when internal_controller_check_port
   set_fact:
-    jboss_domain_controller_score: "{{ jboss_domain_controller_score + 1 }}"
+    jboss_host_controller_score: "{{ (jboss_host_controller_score | int) - 1 }}"
   ignore_errors: yes
   when: 'jboss_eap and internal_controller_check_port.rc == 0 and jboss_is_running'
 
 # Computa o score se houver conexão de saída para o domain
 - name: Compute jboss domain controller score when internal_controller_port_connection
   set_fact:
-    jboss_domain_controller_score: "{{ jboss_domain_controller_score + 1 }}"
+    jboss_host_controller_score: "{{ (jboss_host_controller_score | int) + 1 }}"
   ignore_errors: yes
   when: 'jboss_eap and internal_controller_port_connection.rc != 0 and jboss_is_running'
 
 - name: set domain controller fact
   set_fact:
-    domain_controller: "{{ jboss_domain_controller_score >= 2 }}"
+    domain_controller: "{{ (jboss_host_controller_score | int) < 2 }}"
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
 
@@ -107,7 +107,7 @@
 
 - name: set host controller fact
   set_fact:
-    host_controller: "{{ jboss_domain_controller_score < 2 and internal_standalone_check.rc != 0 }}"
+    host_controller: "{{ (jboss_host_controller_score | int) >= 2 and internal_standalone_check.rc != 0 }}"
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
 
