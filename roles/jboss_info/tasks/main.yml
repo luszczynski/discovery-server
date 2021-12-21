@@ -1,9 +1,19 @@
 ---
-
 - name: internal_host_started_processing_role
   set_fact:
     internal_host_started_processing_role: "jboss_info"
-    jboss_is_running: "{{ (jboss_eap_running_paths | length) > 0 }}"
+
+- name: Init vars
+  set_fact:
+    jboss_is_running: false
+    standalone: false
+    domain_controller: false
+    host_controller: false
+
+- name: Set fact jboss is running
+  set_fact:
+    jboss_is_running: true
+  when: jboss_eap_running_paths | length > 0
 
 - name: gather jboss.processes
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep"
