@@ -9,6 +9,7 @@
     standalone: false
     domain_controller: false
     host_controller: false
+    discover_customization_version: 1.0.0
 
 - name: Set fact jboss is running
   set_fact:
