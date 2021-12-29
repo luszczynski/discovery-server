@@ -9,12 +9,18 @@
     standalone: false
     domain_controller: false
     host_controller: false
-    discover_customization_version: 1.0.0
+    discover_customization_version: 1.0.1
+
+- name: check if jboss is running
+  raw: ps aux | grep java | grep jboss | grep -v "/usr/bin/grep"
+  register: internal_jboss_is_running_process
+  ignore_errors: yes
+  when: 'jboss_eap'
 
 - name: Set fact jboss is running
   set_fact:
     jboss_is_running: true
-  when: jboss_eap_running_paths | length > 0
+  when: jboss_eap_running_paths | length > 0 and internal_jboss_is_running_process.rc == 0
 
 - name: gather jboss.processes
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep"
