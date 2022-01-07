@@ -3,6 +3,7 @@
 - name: internal_host_started_processing_role
   set_fact:
     internal_host_started_processing_role: "jvm"
+    java_version: []
 
 # - name: gather internal_xms_size for Process Controller
 #   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "Process Controller" | grep -Pio '(?<=xms)[^ ]+' | uniq
@@ -15,6 +16,33 @@
 #     process_controller_xms_size: "{{ internal_process_controller_xms_size.stdout | trim }}"
 #   ignore_errors: yes
 #   when: 'jboss_eap'
+
+- name: gather java path
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | egrep -o "(\/[[:alnum:]]+)+\/java\s" | uniq
+  register: jboss_java_path_internal
+  ignore_errors: yes
+  when: 'jboss_eap'
+
+- name: get java version
+  raw: "{{ item | trim }} -version"
+  register: jboss_java_version_internal
+  ignore_errors: yes
+  loop: "{{ jboss_java_path_internal.stdout_lines }}"
+  when: 'jboss_eap'
+
+- name: set java_version fact using stdout
+  set_fact:
+    java_version: "{{ java_version + [item.stdout] }}"
+  ignore_errors: yes
+  loop: "{{ jboss_java_version_internal.results }}"
+  when: jboss_eap and item.stdout != '' and item.rc == 0
+
+- name: set java_version fact using stderr
+  set_fact:
+    java_version: "{{ java_version + [item.stderr] }}"
+  ignore_errors: yes
+  loop: "{{ jboss_java_version_internal.results }}"
+  when: jboss_eap and item.stdout == '' and item.rc == 0
 
 - name: gather internal_xms_size
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=xms)[^ ]+'
