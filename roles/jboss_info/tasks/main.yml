@@ -9,7 +9,7 @@
     standalone: false
     domain_controller: false
     host_controller: false
-    discover_customization_version: 1.0.2
+    discover_customization_version: 1.0.3
 
 - name: check if jboss is running
   raw: ps aux | grep java | grep jboss | grep -v "/usr/bin/grep"

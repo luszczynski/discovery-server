@@ -23,6 +23,12 @@
   ignore_errors: yes
   when: 'jboss_eap'
 
+- name: Execute only when java full path is not avaiable
+  raw: which java
+  register: jboss_java_path_internal
+  ignore_errors: yes
+  when: 'jboss_eap and (jboss_java_path_internal.stdout_lines | length == 0)'
+
 - name: get java version
   raw: "{{ item | trim }} -version"
   register: jboss_java_version_internal
