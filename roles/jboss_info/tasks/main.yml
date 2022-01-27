@@ -9,10 +9,12 @@
     standalone: false
     domain_controller: false
     host_controller: false
-    discover_customization_version: 1.0.4
+    domain_controller_host: ""
+    discover_customization_version: 1.0.5
+    jboss_legacy_version: false
 
 - name: check if jboss is running
-  raw: ps aux | grep java | grep jboss | grep -v "/usr/bin/grep"
+  raw: ps aux | grep java | grep jboss | grep -v "grep"
   register: internal_jboss_is_running_process
   ignore_errors: yes
   when: 'jboss_eap'
@@ -20,10 +22,10 @@
 - name: Set fact jboss is running
   set_fact:
     jboss_is_running: true
-  when: jboss_eap_running_paths | length > 0 and internal_jboss_is_running_process.rc == 0
+  when: (jboss_eap_running_paths | length > 0) and (internal_jboss_is_running_process is defined) and (internal_jboss_is_running_process.rc == 0)
 
 - name: gather jboss.processes
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep"
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "grep"
   register: internal_jboss_processes
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
@@ -34,8 +36,38 @@
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
 
+- name: Gather number of new EAP instances (EAP 6, EAP 7)
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "grep" | grep "\-D\[Server:" | wc -l
+  register: internal_eap_number_instances
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_is_running'
+
+- name: set number of EAP instances fact
+  set_fact:
+    eap_number_instances: "{{ internal_eap_number_instances.stdout | trim }}"
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_is_running'
+
+- name: Gather number of EAP process
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "grep" | wc -l
+  register: internal_eap_number_process
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_is_running'
+
+- name: set number of all EAP process fact
+  set_fact:
+    eap_number_process: "{{ internal_eap_number_process.stdout | trim }}"
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_is_running'
+
+- name: Check if legacy jboss is running (version 3,4,5 or 6)
+  set_fact: 
+    jboss_legacy_version: true
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_is_running and (eap_number_process == eap_number_instances)'
+
 - name: standalone check
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "\-D\[Standalone\]"
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "grep" | grep "\-D\[Standalone\]"
   register: internal_standalone_check
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
@@ -53,7 +85,7 @@
   when: 'jboss_eap and jboss_is_running'
 
 - name: check if this machine is the host controller using ps
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=host-config=)[^ ]+' | grep -i slave
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "grep" | grep -Pio '(?<=host-config=)[^ ]+' | grep -i slave
   register: internal_controller_check_ps # if internal_controller_check_ps.rc == 0 then it is host controller
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
@@ -108,10 +140,10 @@
   set_fact:
     domain_controller: "{{ (jboss_host_controller_score | int) < 2 }}"
   ignore_errors: yes
-  when: 'jboss_eap and jboss_is_running'
+  when: 'jboss_eap and jboss_is_running and not jboss_legacy_version'
 
 - name: get domain controller host
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=master.address=|master-address=)[^ ]+' | uniq
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "grep" | grep -Pio '(?<=master.address=|master-address=)[^ ]+' | uniq
   register: internal_domain_controller_host
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
@@ -120,22 +152,11 @@
   set_fact:
     domain_controller_host: "{{ internal_domain_controller_host.stdout | trim }}"
   ignore_errors: yes
-  when: 'jboss_eap and jboss_is_running'
+  when: 'jboss_eap and jboss_is_running and internal_domain_controller_host.rc == 0'
 
 - name: set host controller fact
   set_fact:
     host_controller: "{{ (jboss_host_controller_score | int) >= 2 and internal_standalone_check.rc != 0 }}"
   ignore_errors: yes
-  when: 'jboss_eap and jboss_is_running'
+  when: 'jboss_eap and jboss_is_running and not jboss_legacy_version'
 
-- name: Gather number of EAP instances
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep "\-D\[Server:" | wc -l
-  register: internal_eap_number_instances
-  ignore_errors: yes
-  when: 'jboss_eap and jboss_is_running'
-
-- name: set number of EAP instances fact
-  set_fact:
-    eap_number_instances: "{{ internal_eap_number_instances.stdout | trim }}"
-  ignore_errors: yes
-  when: 'jboss_eap and jboss_is_running'
