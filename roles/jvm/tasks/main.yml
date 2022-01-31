@@ -3,52 +3,79 @@
 - name: internal_host_started_processing_role
   set_fact:
     internal_host_started_processing_role: "jvm"
-    # java_version: []
+    java_version: []
 
-
-# - name: gather java path
-#   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | egrep -o "(\/[[:alnum:]]+)+\/java\s" | uniq
-#   register: jboss_java_path_internal
-#   ignore_errors: yes
-#   when: 'jboss_eap'
-
-# - name: Execute only when java full path is not avaiable
-#   raw: which java
-#   register: jboss_java_path_internal
-#   ignore_errors: yes
-#   when: 'jboss_eap and (jboss_java_path_internal.stdout_lines | length == 0)'
-
-# - name: get java version
-#   raw: "{{ item | trim }} -version"
-#   register: jboss_java_version_internal
-#   ignore_errors: yes
-#   loop: "{{ jboss_java_path_internal.stdout_lines }}"
-#   when: 'jboss_eap'
-
-- name: get java version
-  raw: "java -version"
-  register: jboss_java_version_internal
+# Get java using regex
+- name: gather java path
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "grep" | egrep -o "(\/[[:alnum:]]+)+\/java\s" | uniq
+  register: jboss_java_path_internal
   ignore_errors: yes
   when: 'jboss_eap'
 
-- name: set java_version fact using stdout
-  set_fact:
-    java_version: "{{ jboss_java_version_internal.stdout | trim }}"
+# Get java using 'which' command
+- name: Execute only when java full path is not available
+  raw: which java
+  register: jboss_java_path_internal_simple
   ignore_errors: yes
-  when: jboss_eap and jboss_java_version_internal.stdout != '' and jboss_java_version_internal.rc == 0
+  when: 'jboss_eap and (jboss_java_path_internal.stdout_lines | length) == 0'
 
-- name: set java_version fact using stderr
-  set_fact:
-    java_version: "{{ jboss_java_version_internal.stderr }}"
+- name: get java version using regex
+  raw: "{{ item | trim }} -version 2>&1"
+  register: jboss_java_version_internal
   ignore_errors: yes
-  when: jboss_eap and jboss_java_version_internal.stdout == '' and jboss_java_version_internal.rc == 0
+  loop: "{{ jboss_java_path_internal.stdout_lines }}"
+  when: 'jboss_eap and jboss_java_path_internal_simple is not defined'
 
-# - name: set java_version fact using stdout
-#   set_fact:
-#     java_version: "{{ java_version + [item.stdout] }}"
+- name: get java version using which
+  raw: "{{ item | trim }} -version 2>&1"
+  register: jboss_java_version_internal
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_java_path_internal_simple is defined'
+
+- name: set java_version fact from regex
+  set_fact:
+    java_version: "{{ java_version + [item.stdout] }}"
+  ignore_errors: yes
+  loop: "{{ jboss_java_version_internal.results }}"
+  when: 'jboss_eap and jboss_java_path_internal_simple is not defined'
+
+- name: set java_version fact from which
+  set_fact:
+    java_version: "{{ item | trim }}"
+  ignore_errors: yes
+  loop: "{{ jboss_java_path_internal_simple.stdout_lines }}"
+  when: 'jboss_eap and jboss_java_path_internal_simple is defined'
+
+# - name: get java version
+#   raw: "java -version 2>&1"
+#   register: jboss_java_version_internal
 #   ignore_errors: yes
-#   loop: "{{ jboss_java_version_internal.results }}"
-#   when: jboss_eap and item.stdout != '' and item.rc == 0
+#   when: 'jboss_eap'
+
+# - name: set java_version fact
+#   set_fact:
+#     java_version: "{{ jboss_java_version_internal.stdout | trim }}"
+#   ignore_errors: yes
+#   when: 'jboss_eap'
+
+# - name: get specific java version
+#   raw: "java -version 2>&1 | grep -i version | cut -d'\"' -f2"
+#   register: jboss_java_specific_version_internal
+#   ignore_errors: yes
+#   when: 'jboss_eap'
+
+# - name: set java specific version fact
+#   set_fact:
+#     java_specific_version: "{{ jboss_java_specific_version_internal.stdout | trim }}"
+#   ignore_errors: yes
+#   when: 'jboss_eap'
+
+
+
+
+
+
+
 
 # - name: set java_version fact using stderr
 #   set_fact:
@@ -58,7 +85,7 @@
 #   when: jboss_eap and item.stdout == '' and item.rc == 0
 
 - name: gather internal_xms_size
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=xms)[^ ]+'
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "grep" | grep -Pio '(?<=xms)[^ ]+'
   register: internal_xms_size
   ignore_errors: yes
   when: 'jboss_eap'
@@ -70,7 +97,7 @@
   when: 'jboss_eap'
 
 - name: gather internal_xmx_size
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=xmx)[^ ]+'
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "grep" | grep -Pio '(?<=xmx)[^ ]+'
   register: internal_xmx_size
   ignore_errors: yes
   when: 'jboss_eap'
@@ -82,7 +109,7 @@
   when: 'jboss_eap'
 
 - name: gather internal max perm size
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep" | grep -Pio '(?<=MaxPermSize=)[^ ]+'
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "grep" | grep -Pio '(?<=MaxPermSize=)[^ ]+'
   register: internal_max_perm_size
   ignore_errors: yes
   when: 'jboss_eap'
@@ -94,7 +121,7 @@
   when: 'jboss_eap'
 
 - name: gather internal_command_line_jboss
-  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "/usr/bin/grep"
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "grep"
   register: internal_command_line_jboss
   ignore_errors: yes
   when: 'jboss_eap'

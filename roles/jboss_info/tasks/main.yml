@@ -10,8 +10,9 @@
     domain_controller: false
     host_controller: false
     domain_controller_host: ""
-    discover_customization_version: 1.0.5
+    discover_customization_version: 1.0.6
     jboss_legacy_version: false
+    jboss_processes: ""
 
 - name: check if jboss is running
   raw: ps aux | grep java | grep jboss | grep -v "grep"
@@ -60,11 +61,23 @@
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
 
-- name: Check if legacy jboss is running (version 3,4,5 or 6)
-  set_fact: 
-    jboss_legacy_version: true
+- name: legacy version check process controller
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "grep" | grep "\-D\[Process Controller\]"
+  register: internal_legacy_check_process_controller
   ignore_errors: yes
-  when: 'jboss_eap and jboss_is_running and (eap_number_process == eap_number_instances)'
+  when: 'jboss_eap and jboss_is_running'
+
+- name: legacy version check host controller
+  raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "grep" | grep "\-D\[Host Controller\]"
+  register: internal_legacy_check_host_controller
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_is_running'
+
+- name: Set fact legacy version
+  set_fact: 
+    jboss_legacy_version: "{{ (internal_legacy_check_process_controller.rc == 0 and internal_legacy_check_process_controller.stdout != '') or (internal_legacy_check_host_controller.rc == 0 and internal_legacy_check_host_controller.stdout != '') }}"
+  ignore_errors: yes
+  when: 'jboss_eap and jboss_is_running'
 
 - name: standalone check
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "grep" | grep "\-D\[Standalone\]"
@@ -138,9 +151,9 @@
 
 - name: set domain controller fact
   set_fact:
-    domain_controller: "{{ (jboss_host_controller_score | int) < 2 }}"
+    domain_controller: "{{ (jboss_host_controller_score | int) < 2 and not jboss_legacy_version }}"
   ignore_errors: yes
-  when: 'jboss_eap and jboss_is_running and not jboss_legacy_version'
+  when: 'jboss_eap and jboss_is_running'
 
 - name: get domain controller host
   raw: ps -A -o comm -o args e --columns 10000 | grep java | grep jboss | grep -v "grep" | grep -Pio '(?<=master.address=|master-address=)[^ ]+' | uniq
@@ -156,7 +169,6 @@
 
 - name: set host controller fact
   set_fact:
-    host_controller: "{{ (jboss_host_controller_score | int) >= 2 and internal_standalone_check.rc != 0 }}"
+    host_controller: "{{ (jboss_host_controller_score | int) >= 2 and internal_standalone_check.rc != 0 and not jboss_legacy_version }}"
   ignore_errors: yes
-  when: 'jboss_eap and jboss_is_running and not jboss_legacy_version'
-
+  when: 'jboss_eap and jboss_is_running'
