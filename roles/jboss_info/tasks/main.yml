@@ -75,7 +75,7 @@
 
 - name: Set fact legacy version
   set_fact: 
-    jboss_legacy_version: "{{ (internal_legacy_check_process_controller.rc == 0 and internal_legacy_check_process_controller.stdout != '') or (internal_legacy_check_host_controller.rc == 0 and internal_legacy_check_host_controller.stdout != '') }}"
+    jboss_legacy_version: "{{ (internal_legacy_check_process_controller.rc != 0 or internal_legacy_check_process_controller.stdout == '') and (internal_legacy_check_host_controller.rc != 0 or internal_legacy_check_host_controller.stdout == '') }}"
   ignore_errors: yes
   when: 'jboss_eap and jboss_is_running'
 
