@@ -17,7 +17,7 @@
   raw: which java
   register: jboss_java_path_internal_simple
   ignore_errors: yes
-  when: 'jboss_eap and (jboss_java_path_internal.stdout_lines | length) == 0'
+  when: 'jboss_eap and ((jboss_java_path_internal.stdout_lines | length) == 0 or jboss_java_path_internal.stdout == "" or jboss_java_path_internal.rc != 0)'
 
 - name: get java version using regex
   raw: "{{ item | trim }} -version 2>&1"
@@ -43,7 +43,7 @@
   set_fact:
     java_version: "{{ item | trim }}"
   ignore_errors: yes
-  loop: "{{ jboss_java_path_internal_simple.stdout_lines }}"
+  loop: "{{ jboss_java_version_internal.stdout_lines }}"
   when: 'jboss_eap and jboss_java_path_internal_simple is defined'
 
 # - name: get java version
