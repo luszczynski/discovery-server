@@ -10,7 +10,7 @@
     domain_controller: false
     host_controller: false
     domain_controller_host: ""
-    discover_customization_version: 1.0.6
+    discover_customization_version: 1.0.7
     jboss_legacy_version: false
     jboss_processes: ""
 
